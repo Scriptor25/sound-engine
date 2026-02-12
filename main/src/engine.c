@@ -1,4 +1,3 @@
-#include "hal/ledc_types.h"
 #include <engine.h>
 
 #include <stddef.h>
@@ -46,7 +45,7 @@ static int track_spin(engine_t *engine, track_t *track, uint32_t now) {
 
   event = track->events + track->current_event;
 
-  if ((now - track->current_event_time) < event->duration + 10)
+  if ((now - track->current_event_time) < event->duration)
     return 0;
 
   if (track->voice) {

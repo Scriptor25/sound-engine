@@ -14,7 +14,7 @@ def process_track(track, ticks_per_beat, tempo):
     current_ticks = 0
 
     active_note_ticks = {}
-    last_event_end_ticks = 0
+    last_sound_end_ticks = 0   # last time we were completely silent
 
     events = []
     track_name = None
@@ -30,29 +30,31 @@ def process_track(track, ticks_per_beat, tempo):
 
         # NOTE ON
         if msg.type == 'note_on' and msg.velocity > 0:
-            # Insert rest if needed
-            if current_ticks > last_event_end_ticks:
-                rest_ticks = current_ticks - last_event_end_ticks
+            # If we are currently silent, insert rest
+            if len(active_note_ticks) == 0 and current_ticks > last_sound_end_ticks:
+                rest_ticks = current_ticks - last_sound_end_ticks
                 rest_ms = ticks_to_ms(rest_ticks, ticks_per_beat, tempo)
-                
-                if rest_ms > 0:
+                if int(rest_ms) > 0:
                     events.append((0.0, rest_ms))
 
             active_note_ticks[msg.note] = current_ticks
-            last_event_end_ticks = current_ticks
 
-        # NOTE OFF
-        elif (msg.type == 'note_off') or (msg.type == 'note_on' and msg.velocity == 0):
-            note_ticks = active_note_ticks[msg.note]
+        # NOTE OFF (or note_on with velocity 0)
+        elif msg.type == 'note_off' or (msg.type == 'note_on' and msg.velocity == 0):
+            if msg.note not in active_note_ticks:
+                continue
 
-            duration_ticks = current_ticks - note_ticks
+            start_ticks = active_note_ticks.pop(msg.note)
+            duration_ticks = current_ticks - start_ticks
             duration_ms = ticks_to_ms(duration_ticks, ticks_per_beat, tempo)
 
-            if duration_ms > 0:
+            if int(duration_ms) > 0:
                 freq = midi_note_to_freq(msg.note)
                 events.append((freq, duration_ms))
 
-            last_event_end_ticks = current_ticks
+            # If that was the last active note, we are now silent
+            if len(active_note_ticks) == 0:
+                last_sound_end_ticks = current_ticks
 
     return track_name, events
 
