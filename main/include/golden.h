@@ -7634,7 +7634,7 @@ event_t golden_reverse_cymbal[] = {
 };
 
 track_t golden_data[] = {
-  // { .pin = 0, .events = golden_bass_lead, .event_count = sizeof(golden_bass_lead) / sizeof(event_t) },
+  { .pin = 2, .events = golden_bass_lead, .event_count = sizeof(golden_bass_lead) / sizeof(event_t) },
   // { .pin = 0, .events = golden_synth_bass, .event_count = sizeof(golden_synth_bass) / sizeof(event_t) },
   // { .pin = 0, .events = golden_synth_bass_2, .event_count = sizeof(golden_synth_bass_2) / sizeof(event_t) },
   // { .pin = 0, .events = golden_fingered_bass, .event_count = sizeof(golden_fingered_bass) / sizeof(event_t) },
@@ -7642,13 +7642,13 @@ track_t golden_data[] = {
   // { .pin = 0, .events = golden_warm_pad_2, .event_count = sizeof(golden_warm_pad_2) / sizeof(event_t) },
   // { .pin = 0, .events = golden_bright_acoustic_piano, .event_count = sizeof(golden_bright_acoustic_piano) / sizeof(event_t) },
   // { .pin = 0, .events = golden_square_wave, .event_count = sizeof(golden_square_wave) / sizeof(event_t) },
-  // { .pin = 0, .events = golden_strings_ensemble, .event_count = sizeof(golden_strings_ensemble) / sizeof(event_t) },
+  { .pin = 1, .events = golden_strings_ensemble, .event_count = sizeof(golden_strings_ensemble) / sizeof(event_t) },
   // { .pin = 0, .events = golden_synth_strings, .event_count = sizeof(golden_synth_strings) / sizeof(event_t) },
   // { .pin = 0, .events = golden_bright_acoustic_piano_2, .event_count = sizeof(golden_bright_acoustic_piano_2) / sizeof(event_t) },
   // { .pin = 0, .events = golden_square_wave_2, .event_count = sizeof(golden_square_wave_2) / sizeof(event_t) },
   // { .pin = 0, .events = golden_drum_kit, .event_count = sizeof(golden_drum_kit) / sizeof(event_t) },
   { .pin = 0, .events = golden_vocal_voice_oohs, .event_count = sizeof(golden_vocal_voice_oohs) / sizeof(event_t) },
-  { .pin = 1, .events = golden_backing_vocals_choir_aahs, .event_count = sizeof(golden_backing_vocals_choir_aahs) / sizeof(event_t) },
+  // { .pin = 0, .events = golden_backing_vocals_choir_aahs, .event_count = sizeof(golden_backing_vocals_choir_aahs) / sizeof(event_t) },
   // { .pin = 0, .events = golden_brightness, .event_count = sizeof(golden_brightness) / sizeof(event_t) },
   // { .pin = 0, .events = golden_reverse_cymbal, .event_count = sizeof(golden_reverse_cymbal) / sizeof(event_t) },
 };
