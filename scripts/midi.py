@@ -94,7 +94,7 @@ def sanitize_name(name, fallback):
 
 def main(filename, name):
     mid = mido.MidiFile(filename)
-    tempo = 500000  # default 120 BPM
+    tempo = 750000  # default 80 BPM
     tracks_data = []
     used_names = set()
 

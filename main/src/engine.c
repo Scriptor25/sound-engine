@@ -15,6 +15,7 @@ static uint32_t get_now() { return xTaskGetTickCount() * portTICK_PERIOD_MS; }
 static void voice_set(track_t *track, uint32_t frequency, uint32_t duty) {
   if (frequency)
     ledc_set_freq(LEDC_LOW_SPEED_MODE, track->timer, frequency);
+
   ledc_set_duty(LEDC_LOW_SPEED_MODE, track->channel, duty);
   ledc_update_duty(LEDC_LOW_SPEED_MODE, track->channel);
 }
@@ -40,7 +41,7 @@ static int track_spin(engine_t *engine, track_t *track, uint32_t now) {
   event = track->events + track->current_event;
 
   if (event->frequency)
-    voice_set(track, event->frequency, 24);
+    voice_set(track, event->frequency, 1);
   else
     voice_set(track, 0, 0);
 
@@ -67,7 +68,7 @@ void engine_init(engine_t *engine, const track_t *tracks, size_t track_count) {
 
     ledc_timer_config_t timer = {
         .speed_mode = LEDC_LOW_SPEED_MODE,
-        .duty_resolution = LEDC_TIMER_8_BIT,
+        .duty_resolution = LEDC_TIMER_1_BIT,
         .timer_num = track->timer,
         .freq_hz = 1000,
         .clk_cfg = LEDC_USE_PLL_DIV_CLK,
@@ -98,9 +99,9 @@ int engine_spin(engine_t *engine) {
 
   uint32_t now = get_now();
 
-  int eof = 1;
+  int end = 1;
   for (size_t i = 0; i < engine->track_count; ++i)
-    eof &= track_spin(engine, engine->tracks + i, now);
+    end &= track_spin(engine, engine->tracks + i, now);
 
-  return eof;
+  return end;
 }
