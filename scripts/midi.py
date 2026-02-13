@@ -7,14 +7,13 @@ def midi_note_to_freq(note):
     return 440.0 * (2.0 ** ((note - 69) / 12.0))
 
 def ticks_to_ms(ticks, ticks_per_beat, tempo):
-    # tempo is microseconds per beat
     return (ticks * tempo) / (ticks_per_beat * 1000.0)
 
 def process_track(track, ticks_per_beat, tempo):
     current_ticks = 0
 
     active_note_ticks = {}
-    last_sound_end_ticks = 0   # last time we were completely silent
+    last_sound_end_ticks = 0
 
     events = []
     track_name = None
@@ -28,9 +27,7 @@ def process_track(track, ticks_per_beat, tempo):
         if msg.type == 'track_name':
             track_name = msg.name
 
-        # NOTE ON
         if msg.type == 'note_on' and msg.velocity > 0:
-            # If we are currently silent, insert rest
             if len(active_note_ticks) == 0 and current_ticks > last_sound_end_ticks:
                 rest_ticks = current_ticks - last_sound_end_ticks
                 rest_ms = ticks_to_ms(rest_ticks, ticks_per_beat, tempo)
@@ -39,7 +36,6 @@ def process_track(track, ticks_per_beat, tempo):
 
             active_note_ticks[msg.note] = current_ticks
 
-        # NOTE OFF (or note_on with velocity 0)
         elif msg.type == 'note_off' or (msg.type == 'note_on' and msg.velocity == 0):
             if msg.note not in active_note_ticks:
                 continue
@@ -52,7 +48,6 @@ def process_track(track, ticks_per_beat, tempo):
                 freq = midi_note_to_freq(msg.note)
                 events.append((freq, duration_ms))
 
-            # If that was the last active note, we are now silent
             if len(active_note_ticks) == 0:
                 last_sound_end_ticks = current_ticks
 
@@ -77,16 +72,12 @@ def sanitize_name(name, fallback):
     if not name:
         return fallback
 
-    # lower case
     name = name.lower()
 
-    # replace non-alphanumeric with underscore
     name = re.sub(r'[^a-z0-9]+', '_', name)
 
-    # remove leading/trailing underscores
     name = name.strip('_')
 
-    # must not start with digit
     if not name or name[0].isdigit():
         name = fallback
 
@@ -94,7 +85,8 @@ def sanitize_name(name, fallback):
 
 def main(filename, name):
     mid = mido.MidiFile(filename)
-    tempo = 750000  # default 80 BPM
+    bpm = 120
+    tempo = 60000000 / bpm
     tracks_data = []
     used_names = set()
 
@@ -121,7 +113,7 @@ def main(filename, name):
 
 if __name__ == "__main__":
     if len(sys.argv) < 3:
-        print("Usage: python midi_to_c.py <file>.mid <name>")
+        print("Usage: python midi.py <file>.mid <name>")
         sys.exit(1)
 
     main(sys.argv[1], sys.argv[2])

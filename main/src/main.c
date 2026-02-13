@@ -1,5 +1,5 @@
 #include <engine.h>
-#include <where_is_my_mind.h>
+#include <golden.h>
 
 #include <stdio.h>
 
@@ -8,8 +8,7 @@
 void app_main(void) {
 
   engine_t engine;
-  engine_init(&engine, where_is_my_mind_data,
-              sizeof(where_is_my_mind_data) / sizeof(track_t));
+  engine_init(&engine, golden_data, sizeof(golden_data) / sizeof(track_t));
 
   printf("starting playback...\n");
 
