@@ -1,5 +1,5 @@
 #include <engine.h>
-#include <golden.h>
+#include <tetris.h>
 
 #include <stdio.h>
 
@@ -14,7 +14,7 @@ void app_main(void) {
 
       &engine,
 
-      golden_data, sizeof(golden_data) / sizeof(track_data_t),
+      tetris_data, sizeof(tetris_data) / sizeof(track_data_t),
 
       PINS, sizeof(PINS) / sizeof(int)
 
