@@ -3325,7 +3325,7 @@ const event_data_t golden_main_drums[] = {
 };
 
 const track_data_t golden_data[] = {
-  { .events = golden_synth_bass, .event_count = sizeof(golden_synth_bass) / sizeof(event_data_t), 3 },
+  { .events = golden_synth_bass, .event_count = sizeof(golden_synth_bass) / sizeof(event_data_t), 0 },
   { .events = golden_voice, .event_count = sizeof(golden_voice) / sizeof(event_data_t), 0 },
   { .events = golden_accent_pad, .event_count = sizeof(golden_accent_pad) / sizeof(event_data_t), 0 },
   { .events = golden_background_choir_aahs, .event_count = sizeof(golden_background_choir_aahs) / sizeof(event_data_t), 0 },
