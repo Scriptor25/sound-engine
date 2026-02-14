@@ -22,6 +22,8 @@ struct __event_data {
 struct __track_data {
   const event_data_t *events;
   size_t event_count;
+
+  int transpose;
 };
 
 typedef struct __track track_t;
@@ -31,11 +33,15 @@ struct __track {
   const event_data_t *events;
   size_t event_count;
 
+  int transpose;
+
   uint32_t current_event;
   int active;
 
   ledc_timer_t timer;
   ledc_channel_t channel;
+
+  uint32_t current_frequency, current_resolution;
 };
 
 struct __engine {

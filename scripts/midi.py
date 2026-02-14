@@ -11,7 +11,6 @@ def ticks_to_ms(ticks, ticks_per_beat, tempo):
 
 def process_track(track, ticks_per_beat, tempo):
     current_time = 0
-
     active_note_time = {}
 
     events = []
@@ -29,17 +28,17 @@ def process_track(track, ticks_per_beat, tempo):
         if msg.type == 'note_on' and msg.velocity > 0:
             active_note_time[msg.note] = current_time
 
-        elif msg.type == 'note_off' or (msg.type == 'note_on' and msg.velocity == 0):
-            if msg.note not in active_note_time:
-                continue
+        elif msg.type == 'note_off' or (msg.type == 'note_on' and msg.velocity == 0) and (msg.note in active_note_time):
+            freq = midi_note_to_freq(msg.note)
 
             start_time = active_note_time.pop(msg.note)
             delta_time = current_time - start_time
+
             time = ticks_to_ms(start_time, ticks_per_beat, tempo)
             duration = ticks_to_ms(delta_time, ticks_per_beat, tempo)
-
-            freq = midi_note_to_freq(msg.note)
-            events.append((freq, time, duration))
+            
+            if freq > 0 and duration > 0:
+                events.append((freq, time, duration))
 
     return track_name, events
 
@@ -55,7 +54,7 @@ def generate_c(tracks, name):
 
     print(f"const track_data_t {name}_data[] = {{")
     for i, (track_name, events) in enumerate(tracks):
-        print(f"  {{ .events = {name}_{track_name}, .event_count = sizeof({name}_{track_name}) / sizeof(event_data_t) }},")
+        print(f"  {{ .events = {name}_{track_name}, .event_count = sizeof({name}_{track_name}) / sizeof(event_data_t), 0 }},")
     print("};")
 
 def sanitize_name(name, fallback):

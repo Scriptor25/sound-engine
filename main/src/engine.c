@@ -12,22 +12,62 @@
 
 static uint32_t get_now() { return xTaskGetTickCount() * portTICK_PERIOD_MS; }
 
-static void voice_set(track_t *track, uint32_t frequency) {
+static int find_suitable_resolution(uint32_t frequency,
+                                    uint32_t clock_frequency,
+                                    uint32_t *result) {
+  for (int resolution = LEDC_TIMER_BIT_MAX - 1; resolution >= LEDC_TIMER_1_BIT;
+       --resolution) {
 
-  int error;
-  if (frequency) {
-    error = ledc_set_freq(LEDC_LOW_SPEED_MODE, track->timer, frequency) &&
-            ledc_set_freq(LEDC_LOW_SPEED_MODE, track->timer, frequency << 1) &&
-            ledc_set_freq(LEDC_LOW_SPEED_MODE, track->timer, frequency >> 1);
-  } else {
-    error = 1;
+    uint32_t divider = clock_frequency / (frequency * (1 << resolution));
+    if (divider >= 1 && divider < 1024) {
+
+      (void)(result && (*result = resolution));
+
+      return 1;
+    }
   }
 
-  uint32_t duty;
-  if (error) {
-    duty = 0;
+  return 0;
+}
+
+static void set_voice(track_t *track, uint32_t frequency) {
+
+  if (!frequency) {
+    ledc_set_duty(LEDC_LOW_SPEED_MODE, track->channel, 0);
+    ledc_update_duty(LEDC_LOW_SPEED_MODE, track->channel);
+    return;
+  }
+
+  if (track->transpose < 0) {
+    frequency >>= -track->transpose;
+  } else if (track->transpose > 0) {
+    frequency <<= track->transpose;
+  }
+
+  uint32_t duty, resolution;
+  if (track->current_frequency == frequency) {
+    duty = ((1 << track->current_resolution) - 1) >> 4;
+  } else if (find_suitable_resolution(frequency, 80000000, &resolution)) {
+
+    if (track->current_resolution == resolution) {
+      ledc_set_freq(LEDC_LOW_SPEED_MODE, track->timer, frequency);
+    } else {
+      ledc_timer_config_t timer = {
+          .speed_mode = LEDC_LOW_SPEED_MODE,
+          .duty_resolution = resolution,
+          .timer_num = track->timer,
+          .freq_hz = frequency,
+          .clk_cfg = LEDC_USE_PLL_DIV_CLK,
+      };
+      ledc_timer_config(&timer);
+    }
+
+    duty = ((1 << resolution) - 1) >> 4;
+
+    track->current_frequency = frequency;
+    track->current_resolution = resolution;
   } else {
-    duty = 64;
+    duty = 0;
   }
 
   ledc_set_duty(LEDC_LOW_SPEED_MODE, track->channel, duty);
@@ -43,18 +83,18 @@ static int track_spin(engine_t *engine, track_t *track, uint32_t now) {
 
   event = track->events + track->current_event;
 
-  if (!track->active && now >= event->time) {
-    track->active = 1;
-    voice_set(track, event->frequency);
-  }
-
-  if (now < event->time + event->duration)
+  if (now < event->time + event->duration) {
+    if (!track->active && now >= event->time) {
+      track->active = 1;
+      set_voice(track, event->frequency);
+    }
     return 0;
+  }
 
   while (now >= event->time + event->duration) {
     if (++track->current_event >= track->event_count) {
       track->active = 0;
-      voice_set(track, 0);
+      set_voice(track, 0);
       return 1;
     }
 
@@ -63,12 +103,12 @@ static int track_spin(engine_t *engine, track_t *track, uint32_t now) {
 
   if (now < event->time) {
     track->active = 0;
-    voice_set(track, 0);
+    set_voice(track, 0);
     return 0;
   }
 
   track->active = 1;
-  voice_set(track, event->frequency);
+  set_voice(track, event->frequency);
   return 0;
 }
 
@@ -82,17 +122,9 @@ void engine_init(
 
 ) {
 
-  for (size_t i = 0; i < MIN(pin_count, ENGINE_VOICE_MAX); ++i) {
+  size_t count = MIN(track_count, MIN(pin_count, ENGINE_VOICE_MAX));
 
-    ledc_timer_config_t timer = {
-        .speed_mode = LEDC_LOW_SPEED_MODE,
-        .duty_resolution = LEDC_TIMER_10_BIT,
-        .timer_num = (ledc_timer_t)i,
-        .freq_hz = 1000,
-        .clk_cfg = LEDC_USE_PLL_DIV_CLK,
-    };
-    ledc_timer_config(&timer);
-
+  for (size_t i = 0; i < count; ++i) {
     ledc_channel_config_t channel = {
         .gpio_num = pins[i],
         .speed_mode = LEDC_LOW_SPEED_MODE,
@@ -105,8 +137,8 @@ void engine_init(
     ledc_channel_config(&channel);
   }
 
-  engine->tracks = (track_t *)calloc(track_count, sizeof(track_t));
-  engine->track_count = track_count;
+  engine->tracks = (track_t *)calloc(count, sizeof(track_t));
+  engine->track_count = count;
 
   for (size_t i = 0; i < engine->track_count; ++i) {
 
@@ -116,11 +148,16 @@ void engine_init(
     track->events = track_data->events;
     track->event_count = track_data->event_count;
 
+    track->transpose = track_data->transpose;
+
     track->current_event = 0;
     track->active = 0;
 
     track->timer = (ledc_timer_t)i;
     track->channel = (ledc_channel_t)i;
+
+    track->current_frequency = 0;
+    track->current_resolution = 0;
   }
 }
 
