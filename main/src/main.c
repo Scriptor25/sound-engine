@@ -1,11 +1,11 @@
 #include <engine.h>
-#include <tetris.h>
+#include <freebird.h>
 
 #include <stdio.h>
 
 #include <freertos/FreeRTOS.h>
 
-const int PINS[] = {0, 1, 2, 3, 4, 5, 14, 15, 18, 19, 20, 21, 22};
+const int PINS[] = {0, 1, 2, 3};
 
 void app_main(void) {
 
@@ -14,7 +14,7 @@ void app_main(void) {
 
       &engine,
 
-      tetris_data, sizeof(tetris_data) / sizeof(track_data_t),
+      freebird_data, sizeof(freebird_data) / sizeof(track_data_t),
 
       PINS, sizeof(PINS) / sizeof(int)
 

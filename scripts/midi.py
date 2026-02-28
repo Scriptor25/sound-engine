@@ -11,7 +11,7 @@ def ticks_to_ms(ticks, ticks_per_beat, tempo):
 
 def process_track(track, ticks_per_beat, tempo):
     current_time = 0
-    active_note_time = {}
+    active_notes = {}
 
     events = []
     track_name = None
@@ -26,19 +26,19 @@ def process_track(track, ticks_per_beat, tempo):
             track_name = msg.name
 
         if msg.type == 'note_on' and msg.velocity > 0:
-            active_note_time[msg.note] = current_time
+            active_notes[msg.note] = (current_time, msg.velocity)
 
-        elif msg.type == 'note_off' or (msg.type == 'note_on' and msg.velocity == 0) and (msg.note in active_note_time):
+        elif (msg.type == 'note_off' or (msg.type == 'note_on' and msg.velocity == 0)) and (msg.note in active_notes):
             freq = midi_note_to_freq(msg.note)
 
-            start_time = active_note_time.pop(msg.note)
+            (start_time, velocity) = active_notes.pop(msg.note)
             delta_time = current_time - start_time
 
             time = ticks_to_ms(start_time, ticks_per_beat, tempo)
             duration = ticks_to_ms(delta_time, ticks_per_beat, tempo)
             
             if freq > 0 and duration > 0:
-                events.append((freq, time, duration))
+                events.append((freq, time, duration, velocity))
 
     return track_name, events
 
@@ -48,8 +48,8 @@ def generate_c(tracks, name):
 
     for track_name, events in tracks:
         print(f"const event_data_t {name}_{track_name}[] = {{")
-        for freq, time, duration in events:
-            print(f"  {{{int(freq)}, {int(time)}, {int(duration)}}},")
+        for freq, time, duration, velocity in events:
+            print(f"  {{{int(freq)}, {int(time)}, {int(duration)}, {int(velocity)}}},")
         print("};\n")
 
     print(f"const track_data_t {name}_data[] = {{")

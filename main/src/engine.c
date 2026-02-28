@@ -12,6 +12,19 @@
 
 static uint32_t get_now() { return xTaskGetTickCount() * portTICK_PERIOD_MS; }
 
+static uint32_t transpose_frequency(uint32_t frequency, int transpose) {
+
+  if (transpose < 0) {
+    return frequency >> -transpose;
+  }
+
+  if (transpose > 0) {
+    return frequency << transpose;
+  }
+
+  return frequency;
+}
+
 static int find_suitable_resolution(uint32_t frequency,
                                     uint32_t clock_frequency,
                                     uint32_t *result) {
@@ -30,32 +43,26 @@ static int find_suitable_resolution(uint32_t frequency,
   return 0;
 }
 
-static void set_voice(track_t *track, uint32_t frequency) {
+static void set_voice(voice_t *voice, uint32_t frequency) {
 
   if (!frequency) {
-    ledc_set_duty(LEDC_LOW_SPEED_MODE, track->channel, 0);
-    ledc_update_duty(LEDC_LOW_SPEED_MODE, track->channel);
+    ledc_set_duty(LEDC_LOW_SPEED_MODE, voice->channel, 0);
+    ledc_update_duty(LEDC_LOW_SPEED_MODE, voice->channel);
     return;
   }
 
-  if (track->transpose < 0) {
-    frequency >>= -track->transpose;
-  } else if (track->transpose > 0) {
-    frequency <<= track->transpose;
-  }
-
   uint32_t duty, resolution;
-  if (track->current_frequency == frequency) {
-    duty = ((1 << track->current_resolution) - 1) >> 4;
+  if (voice->current_frequency == frequency) {
+    duty = ((1 << voice->current_resolution) - 1) >> 4;
   } else if (find_suitable_resolution(frequency, 80000000, &resolution)) {
 
-    if (track->current_resolution == resolution) {
-      ledc_set_freq(LEDC_LOW_SPEED_MODE, track->timer, frequency);
+    if (voice->current_resolution == resolution) {
+      ledc_set_freq(LEDC_LOW_SPEED_MODE, voice->timer, frequency);
     } else {
       ledc_timer_config_t timer = {
           .speed_mode = LEDC_LOW_SPEED_MODE,
           .duty_resolution = resolution,
-          .timer_num = track->timer,
+          .timer_num = voice->timer,
           .freq_hz = frequency,
           .clk_cfg = LEDC_USE_PLL_DIV_CLK,
       };
@@ -64,37 +71,180 @@ static void set_voice(track_t *track, uint32_t frequency) {
 
     duty = ((1 << resolution) - 1) >> 4;
 
-    track->current_frequency = frequency;
-    track->current_resolution = resolution;
+    voice->current_frequency = frequency;
+    voice->current_resolution = resolution;
   } else {
     duty = 0;
   }
 
-  ledc_set_duty(LEDC_LOW_SPEED_MODE, track->channel, duty);
-  ledc_update_duty(LEDC_LOW_SPEED_MODE, track->channel);
+  ledc_set_duty(LEDC_LOW_SPEED_MODE, voice->channel, duty);
+  ledc_update_duty(LEDC_LOW_SPEED_MODE, voice->channel);
 }
 
+static voice_t *find_free_perfect_voice(engine_t *engine, uint32_t frequency) {
+
+  for (size_t i = 0; i < engine->voice_count; ++i) {
+    voice_t *voice = engine->voices + i;
+
+    if (voice->owner && voice->owner->voice == voice) {
+      continue;
+    }
+
+    if (voice->current_frequency != frequency) {
+      continue;
+    }
+
+    return voice;
+  }
+
+  return NULL;
+}
+
+static voice_t *find_free_voice(engine_t *engine) {
+
+  for (size_t i = 0; i < engine->voice_count; ++i) {
+    voice_t *voice = engine->voices + i;
+
+    if (voice->owner && voice->owner->voice == voice) {
+      continue;
+    }
+
+    return voice;
+  }
+
+  return NULL;
+}
+
+static voice_t *find_first_perfect_voice(engine_t *engine, uint32_t frequency,
+                                         int8_t velocity) {
+
+  for (size_t i = 0; i < engine->voice_count; ++i) {
+    voice_t *voice = engine->voices + i;
+
+    if (voice->current_frequency != frequency) {
+      continue;
+    }
+
+    if (voice->current_velocity >= velocity) {
+      continue;
+    }
+
+    return voice;
+  }
+
+  return NULL;
+}
+
+static voice_t *find_first_voice(engine_t *engine, int8_t velocity) {
+
+  for (size_t i = 0; i < engine->voice_count; ++i) {
+    voice_t *voice = engine->voices + i;
+
+    if (voice->current_velocity >= velocity) {
+      continue;
+    }
+
+    return voice;
+  }
+
+  return NULL;
+}
+
+/**
+ * algorithm:
+ *  1. try to find a free voice that already has the perfect frequency
+ *  2. try to find any free voice
+ *  3. try to find a non-free voice that already has the perfect frequency
+ *  4. try to find any non-free voice
+ */
+static voice_t *allocate_voice(engine_t *engine, uint32_t frequency,
+                               int8_t velocity) {
+
+  voice_t *voice;
+
+  voice = find_free_perfect_voice(engine, frequency);
+  if (voice) {
+    return voice;
+  }
+
+  voice = find_free_voice(engine);
+  if (voice) {
+    return voice;
+  }
+
+  if (ENGINE_VOICE_STEALING) {
+    voice = find_first_perfect_voice(engine, frequency, velocity);
+    if (voice) {
+      return voice;
+    }
+
+    voice = find_first_voice(engine, velocity);
+    if (voice) {
+      return voice;
+    }
+  }
+
+  return NULL;
+}
+
+static void free_and_set_voice(track_t *track) {
+  if (!track->voice) {
+    return;
+  }
+
+  set_voice(track->voice, 0);
+
+  track->voice->owner = NULL;
+  track->voice->current_velocity = -128;
+  track->voice = NULL;
+}
+
+/**
+ * @return if voice
+ */
+static int allocate_and_set_voice(engine_t *engine, track_t *track,
+                                  const event_data_t *event) {
+  uint32_t f = transpose_frequency(event->frequency, track->transpose);
+
+  if (!track->voice) {
+    track->voice = allocate_voice(engine, f, event->velocity);
+  }
+
+  if (track->voice) {
+    track->voice->owner = track;
+    track->voice->current_velocity = event->velocity;
+    set_voice(track->voice, f);
+    return 1;
+  }
+
+  return 0;
+}
+
+/**
+ * @return if end
+ */
 static int track_spin(engine_t *engine, track_t *track, uint32_t now) {
 
   const event_data_t *event;
 
-  if (track->current_event >= track->event_count)
+  if (track->current_event >= track->event_count) {
     return 1;
+  }
 
   event = track->events + track->current_event;
 
   if (now < event->time + event->duration) {
     if (!track->active && now >= event->time) {
-      track->active = 1;
-      set_voice(track, event->frequency);
+      track->active = allocate_and_set_voice(engine, track, event);
     }
+
     return 0;
   }
 
   while (now >= event->time + event->duration) {
     if (++track->current_event >= track->event_count) {
       track->active = 0;
-      set_voice(track, 0);
+      free_and_set_voice(track);
       return 1;
     }
 
@@ -103,12 +253,11 @@ static int track_spin(engine_t *engine, track_t *track, uint32_t now) {
 
   if (now < event->time) {
     track->active = 0;
-    set_voice(track, 0);
+    free_and_set_voice(track);
     return 0;
   }
 
-  track->active = 1;
-  set_voice(track, event->frequency);
+  track->active = allocate_and_set_voice(engine, track, event);
   return 0;
 }
 
@@ -121,24 +270,8 @@ void engine_init(
     const int *pins, size_t pin_count
 
 ) {
-
-  size_t count = MIN(track_count, MIN(pin_count, ENGINE_VOICE_MAX));
-
-  for (size_t i = 0; i < count; ++i) {
-    ledc_channel_config_t channel = {
-        .gpio_num = pins[i],
-        .speed_mode = LEDC_LOW_SPEED_MODE,
-        .channel = (ledc_channel_t)i,
-        .intr_type = LEDC_INTR_DISABLE,
-        .timer_sel = (ledc_timer_t)i,
-        .duty = 0,
-        .hpoint = 0,
-    };
-    ledc_channel_config(&channel);
-  }
-
-  engine->tracks = (track_t *)calloc(count, sizeof(track_t));
-  engine->track_count = count;
+  engine->track_count = track_count;
+  engine->tracks = (track_t *)calloc(engine->track_count, sizeof(track_t));
 
   for (size_t i = 0; i < engine->track_count; ++i) {
 
@@ -153,20 +286,52 @@ void engine_init(
     track->current_event = 0;
     track->active = 0;
 
-    track->timer = (ledc_timer_t)i;
-    track->channel = (ledc_channel_t)i;
+    track->voice = NULL;
+  }
 
-    track->current_frequency = 0;
-    track->current_resolution = 0;
+  engine->voice_count = MIN(pin_count, ENGINE_VOICE_MAX);
+  engine->voices = (voice_t *)calloc(engine->voice_count, sizeof(voice_t));
+
+  for (size_t i = 0; i < engine->voice_count; ++i) {
+    voice_t *voice = engine->voices + i;
+
+    voice->owner = NULL;
+
+    voice->timer = (ledc_timer_t)i;
+    voice->channel = (ledc_channel_t)i;
+
+    voice->current_frequency = 0;
+    voice->current_resolution = 0;
+
+    ledc_channel_config_t channel = {
+        .gpio_num = pins[i],
+        .speed_mode = LEDC_LOW_SPEED_MODE,
+        .channel = voice->channel,
+        .intr_type = LEDC_INTR_DISABLE,
+        .timer_sel = voice->timer,
+        .duty = 0,
+        .hpoint = 0,
+    };
+    ledc_channel_config(&channel);
   }
 }
 
 void engine_terminate(engine_t *engine) {
 
+  for (size_t i = 0; i < engine->voice_count; ++i) {
+    voice_t *voice = engine->voices + i;
+
+    set_voice(voice, 0);
+  }
+
   free(engine->tracks);
+  free(engine->voices);
 
   engine->track_count = 0;
   engine->tracks = NULL;
+
+  engine->voice_count = 0;
+  engine->voices = NULL;
 }
 
 int engine_spin(engine_t *engine) {

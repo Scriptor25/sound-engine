@@ -9,6 +9,7 @@
 #define MAX(A, B) ((A) > (B) ? (A) : (B))
 
 #define ENGINE_VOICE_MAX MIN(LEDC_TIMER_MAX, LEDC_CHANNEL_MAX)
+#define ENGINE_VOICE_STEALING true
 
 typedef struct __event_data event_data_t;
 typedef struct __track_data track_data_t;
@@ -17,6 +18,7 @@ struct __event_data {
   uint32_t frequency;
   uint32_t time;
   uint32_t duration;
+  int8_t velocity;
 };
 
 struct __track_data {
@@ -27,6 +29,7 @@ struct __track_data {
 };
 
 typedef struct __track track_t;
+typedef struct __voice voice_t;
 typedef struct __engine engine_t;
 
 struct __track {
@@ -38,15 +41,25 @@ struct __track {
   uint32_t current_event;
   int active;
 
+  voice_t *voice;
+};
+
+struct __voice {
+  track_t *owner;
+
   ledc_timer_t timer;
   ledc_channel_t channel;
 
   uint32_t current_frequency, current_resolution;
+  int8_t current_velocity;
 };
 
 struct __engine {
   track_t *tracks;
   size_t track_count;
+
+  voice_t *voices;
+  size_t voice_count;
 };
 
 void engine_init(
