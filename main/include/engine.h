@@ -42,6 +42,7 @@ struct __track {
   int active;
 
   voice_t *voice;
+  voice_t *cache;
 };
 
 struct __voice {

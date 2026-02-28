@@ -192,6 +192,8 @@ static void free_and_set_voice(track_t *track) {
     return;
   }
 
+  track->cache = track->voice;
+
   set_voice(track->voice, 0);
 
   track->voice->owner = NULL;
@@ -207,7 +209,12 @@ static int allocate_and_set_voice(engine_t *engine, track_t *track,
   uint32_t f = transpose_frequency(event->frequency, track->transpose);
 
   if (!track->voice) {
-    track->voice = allocate_voice(engine, f, event->velocity);
+    if (!track->cache ||
+        (track->cache->owner && track->cache->owner != track)) {
+      track->voice = allocate_voice(engine, f, event->velocity);
+    } else {
+      track->voice = track->cache;
+    }
   }
 
   if (track->voice) {
@@ -287,6 +294,7 @@ void engine_init(
     track->active = 0;
 
     track->voice = NULL;
+    track->cache = NULL;
   }
 
   engine->voice_count = MIN(pin_count, ENGINE_VOICE_MAX);
