@@ -43,17 +43,17 @@ static int find_suitable_resolution(uint32_t frequency,
   return 0;
 }
 
-static void set_voice(voice_t *voice, uint32_t frequency) {
+static void set_voice(voice_t *voice, uint32_t frequency, uint32_t velocity) {
 
-  if (!frequency) {
+  if (!frequency || !velocity) {
     ledc_set_duty(LEDC_LOW_SPEED_MODE, voice->channel, 0);
     ledc_update_duty(LEDC_LOW_SPEED_MODE, voice->channel);
     return;
   }
 
-  uint32_t duty, resolution;
+  uint32_t max_duty, resolution;
   if (voice->current_frequency == frequency) {
-    duty = ((1 << voice->current_resolution) - 1) >> 4;
+    max_duty = ((1 << voice->current_resolution) - 1) >> 4;
   } else if (find_suitable_resolution(frequency, 80000000, &resolution)) {
 
     if (voice->current_resolution == resolution) {
@@ -69,13 +69,16 @@ static void set_voice(voice_t *voice, uint32_t frequency) {
       ledc_timer_config(&timer);
     }
 
-    duty = ((1 << resolution) - 1) >> 4;
+    max_duty = ((1 << resolution) - 1) >> 4;
 
     voice->current_frequency = frequency;
     voice->current_resolution = resolution;
   } else {
-    duty = 0;
+    max_duty = 0;
   }
+
+  uint32_t duty =
+      MAP(uint32_t, float, 0, ENGINE_VELOCITY_MAX, 0, max_duty, velocity);
 
   ledc_set_duty(LEDC_LOW_SPEED_MODE, voice->channel, duty);
   ledc_update_duty(LEDC_LOW_SPEED_MODE, voice->channel);
@@ -116,7 +119,7 @@ static voice_t *find_free_voice(engine_t *engine) {
 }
 
 static voice_t *find_first_perfect_voice(engine_t *engine, uint32_t frequency,
-                                         int8_t velocity) {
+                                         uint32_t velocity) {
 
   for (size_t i = 0; i < engine->voice_count; ++i) {
     voice_t *voice = engine->voices + i;
@@ -135,7 +138,7 @@ static voice_t *find_first_perfect_voice(engine_t *engine, uint32_t frequency,
   return NULL;
 }
 
-static voice_t *find_first_voice(engine_t *engine, int8_t velocity) {
+static voice_t *find_first_voice(engine_t *engine, uint32_t velocity) {
 
   for (size_t i = 0; i < engine->voice_count; ++i) {
     voice_t *voice = engine->voices + i;
@@ -158,7 +161,7 @@ static voice_t *find_first_voice(engine_t *engine, int8_t velocity) {
  *  4. try to find any non-free voice
  */
 static voice_t *allocate_voice(engine_t *engine, uint32_t frequency,
-                               int8_t velocity) {
+                               uint32_t velocity) {
 
   voice_t *voice;
 
@@ -194,10 +197,10 @@ static void free_and_set_voice(track_t *track) {
 
   track->cache = track->voice;
 
-  set_voice(track->voice, 0);
+  set_voice(track->voice, 0, 0);
 
   track->voice->owner = NULL;
-  track->voice->current_velocity = -128;
+  track->voice->current_velocity = 0;
   track->voice = NULL;
 }
 
@@ -206,12 +209,12 @@ static void free_and_set_voice(track_t *track) {
  */
 static int allocate_and_set_voice(engine_t *engine, track_t *track,
                                   const event_data_t *event) {
-  uint32_t f = transpose_frequency(event->frequency, track->transpose);
+  uint32_t frequency = transpose_frequency(event->frequency, track->transpose);
 
   if (!track->voice) {
     if (!track->cache ||
         (track->cache->owner && track->cache->owner != track)) {
-      track->voice = allocate_voice(engine, f, event->velocity);
+      track->voice = allocate_voice(engine, frequency, event->velocity);
     } else {
       track->voice = track->cache;
     }
@@ -220,7 +223,7 @@ static int allocate_and_set_voice(engine_t *engine, track_t *track,
   if (track->voice) {
     track->voice->owner = track;
     track->voice->current_velocity = event->velocity;
-    set_voice(track->voice, f);
+    set_voice(track->voice, frequency, event->velocity);
     return 1;
   }
 
@@ -244,7 +247,6 @@ static int track_spin(engine_t *engine, track_t *track, uint32_t now) {
     if (!track->active && now >= event->time) {
       track->active = allocate_and_set_voice(engine, track, event);
     }
-
     return 0;
   }
 
@@ -329,7 +331,7 @@ void engine_terminate(engine_t *engine) {
   for (size_t i = 0; i < engine->voice_count; ++i) {
     voice_t *voice = engine->voices + i;
 
-    set_voice(voice, 0);
+    set_voice(voice, 0, 0);
   }
 
   free(engine->tracks);

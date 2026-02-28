@@ -8,8 +8,13 @@
 #define MIN(A, B) ((A) < (B) ? (A) : (B))
 #define MAX(A, B) ((A) > (B) ? (A) : (B))
 
+#define MAP(TY, FTY, SMIN, SMAX, DMIN, DMAX, T)                                \
+  ((TY)((FTY)(((DMAX) - (DMIN)) * ((T) - (SMIN))) / (FTY)((SMAX) - (SMIN)) +   \
+        (FTY)(DMIN)))
+
 #define ENGINE_VOICE_MAX MIN(LEDC_TIMER_MAX, LEDC_CHANNEL_MAX)
 #define ENGINE_VOICE_STEALING true
+#define ENGINE_VELOCITY_MAX 127
 
 typedef struct __event_data event_data_t;
 typedef struct __track_data track_data_t;
@@ -18,7 +23,7 @@ struct __event_data {
   uint32_t frequency;
   uint32_t time;
   uint32_t duration;
-  int8_t velocity;
+  uint32_t velocity;
 };
 
 struct __track_data {
@@ -52,7 +57,7 @@ struct __voice {
   ledc_channel_t channel;
 
   uint32_t current_frequency, current_resolution;
-  int8_t current_velocity;
+  uint32_t current_velocity;
 };
 
 struct __engine {
