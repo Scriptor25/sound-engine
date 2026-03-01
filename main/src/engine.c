@@ -382,12 +382,17 @@ int engine_spin(engine_t *engine) {
   uint32_t now;
   int end;
   size_t i;
+  track_t *track;
 
   now = get_now();
 
   end = 1;
-  for (i = 0; i < engine->track_count; ++i)
-    end &= track_spin(engine, engine->tracks + i, now);
+  for (i = 0; i < engine->track_count; ++i) {
+    track = engine->tracks + i;
+    if (track->envelope) {
+      end &= track_spin(engine, engine->tracks + i, now);
+    }
+  }
 
   return end;
 }
