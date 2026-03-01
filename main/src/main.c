@@ -1,5 +1,5 @@
 #include <engine.h>
-#include <songs/through_the_fire_and_flames.h>
+#include <songs/megalovania.h>
 
 #include <stdio.h>
 
@@ -169,8 +169,7 @@ void app_main(void) {
 
       ENVELOPES, sizeof(ENVELOPES) / sizeof(envelope_data_t),
 
-      through_the_fire_and_flames_data,
-      sizeof(through_the_fire_and_flames_data) / sizeof(track_data_t),
+      megalovania_data, sizeof(megalovania_data) / sizeof(track_data_t),
 
       PINS, sizeof(PINS) / sizeof(int)
 

@@ -14,6 +14,7 @@
 
 #define ENGINE_VOICE_MAX MIN(LEDC_TIMER_MAX, LEDC_CHANNEL_MAX)
 #define ENGINE_VOICE_STEALING true
+#define ENGINE_VOICE_COOLDOWN 100
 
 typedef struct __event_data event_data_t;
 typedef struct __track_data track_data_t;
@@ -68,6 +69,7 @@ struct __voice {
 
   uint32_t current_frequency, current_resolution;
   uint32_t current_velocity;
+  uint32_t cooldown_end;
 };
 
 struct __engine {

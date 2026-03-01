@@ -6,7 +6,7 @@ import re
 def midi_note_to_freq(note):
     return 440.0 * (2.0 ** ((note - 69) / 12.0))
 
-def split_voices(notes, overlap = 0.005):
+def split_voices(notes, overlap = 0):
     notes = sorted(notes, key=lambda n: n.start)
 
     voices = []
@@ -60,7 +60,7 @@ def generate_c(tracks, name):
     for track_name, program, events in tracks:
         print(f"const event_data_t {name}_{track_name}[] = {{")
         for freq, time, duration, velocity in events:
-            print(f"  {{{int(freq)}, {int(time)}, {int(duration)}, {int(velocity)}}},")
+            print(f"  {{{int(freq)}, {int(time)}, {int(duration)}, {int(velocity)}}},{" // long note" if duration >= 4000 else ""}")
         print("};\n")
 
     print(f"const track_data_t {name}_data[] = {{")
