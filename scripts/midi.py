@@ -6,20 +6,48 @@ import re
 def midi_note_to_freq(note):
     return 440.0 * (2.0 ** ((note - 69) / 12.0))
 
-def process_instrument(instrument):
-    events = []
-    
-    for note in instrument.notes:
-        freq = midi_note_to_freq(note.pitch)
+def split_voices(notes):
+    notes = sorted(notes, key=lambda n: n.start)
 
-        time = note.start * 1000.0
-        duration = (note.end - note.start) * 1000.0
-        velocity = note.velocity
+    voices = []
+
+    for note in notes:
+        placed = False
+
+        for voice in voices:
+            last_note = voice[-1]
+            if note.start >= last_note.end:
+                voice.append(note)
+                placed = True
+                break
         
-        if freq > 0 and duration > 0:
-            events.append((freq, time, duration, velocity))
+        if not placed:
+            voices.append([note])
+    
+    return voices
 
-    return instrument.name, instrument.program, events
+def process_instrument(instrument):
+    voices = split_voices(instrument.notes)
+
+    processed = []
+
+    for index, notes in enumerate(voices):
+        events = []
+        
+        for note in notes:
+            freq = midi_note_to_freq(note.pitch)
+
+            time = note.start * 1000.0
+            duration = (note.end - note.start) * 1000.0
+            velocity = note.velocity
+            
+            if freq > 0 and duration > 0:
+                events.append((freq, time, duration, velocity))
+        
+        if events:
+            processed.append((index, events))
+
+    return instrument.name, instrument.program, processed
 
 def generate_c(tracks, name):
     print("#pragma once\n")
@@ -55,27 +83,30 @@ def main(filename, name):
     tracks = []
     used_names = set()
 
-    for i, instrument in enumerate(mid.instruments):
+    for index, instrument in enumerate(mid.instruments):
         if instrument.is_drum:
             continue
 
-        raw_name, program, events = process_instrument(instrument)
+        instrument_name, program, voices = process_instrument(instrument)
 
-        if not events:
+        if not voices:
             continue
 
-        fallback = f"track{i}"
-        track_name = sanitize_name(raw_name, fallback)
+        base_fallback = f"track{index}"
+        base_name = sanitize_name(instrument_name, base_fallback)
 
-        # ensure uniqueness
-        base = track_name
-        counter = 1
-        while track_name in used_names:
-            track_name = f"{base}_{counter}"
-            counter += 1
+        for voice_index, events in voices:
+            voice_name = base_name if voice_index == 0 else f"{base_name}_{voice_index}"
 
-        used_names.add(track_name)
-        tracks.append((track_name, program, events))
+            # ensure uniqueness
+            base = voice_name
+            counter = 1
+            while voice_name in used_names:
+                voice_name = f"{base}_{counter}"
+                counter += 1
+
+            used_names.add(voice_name)
+            tracks.append((voice_name, program, events))
 
     generate_c(tracks, name)
 

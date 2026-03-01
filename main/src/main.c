@@ -1,5 +1,5 @@
 #include <engine.h>
-#include <songs/what_ive_done.h>
+#include <songs/free_bird.h>
 
 #include <stdio.h>
 
@@ -169,7 +169,7 @@ void app_main(void) {
 
       ENVELOPES, sizeof(ENVELOPES) / sizeof(envelope_data_t),
 
-      what_ive_done_data, sizeof(what_ive_done_data) / sizeof(track_data_t),
+      free_bird_data, sizeof(free_bird_data) / sizeof(track_data_t),
 
       PINS, sizeof(PINS) / sizeof(int)
 
