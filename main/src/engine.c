@@ -96,14 +96,12 @@ static void clear_voice(voice_t *voice) {
   ledc_update_duty(LEDC_LOW_SPEED_MODE, voice->channel);
 }
 
-static void set_voice(engine_t *engine, voice_t *voice,
-                      const envelope_data_t *envelope, uint32_t now,
-                      uint32_t frequency, uint32_t velocity, uint32_t begin,
-                      uint32_t duration) {
+static void set_voice(engine_t *engine, voice_t *voice, uint32_t frequency,
+                      uint32_t velocity) {
 
   uint32_t max_duty, resolution, duty;
 
-  if (!engine || !envelope || !frequency || !velocity || !duration) {
+  if (!engine || !frequency || !velocity) {
     clear_voice(voice);
     return;
   }
@@ -132,8 +130,6 @@ static void set_voice(engine_t *engine, voice_t *voice,
   } else {
     max_duty = 0;
   }
-
-  velocity = calculate_velocity(envelope, now, velocity, begin, duration);
 
   duty = MAP(uint32_t, float, 0, engine->max_velocity, 0, max_duty, velocity);
 
@@ -255,7 +251,7 @@ static voice_t *allocate_voice(engine_t *engine, uint32_t frequency,
   return NULL;
 }
 
-static void free_and_set_voice(track_t *track) {
+static void free_and_clear_voice(track_t *track) {
   if (!track->voice) {
     return;
   }
@@ -269,42 +265,32 @@ static void free_and_set_voice(track_t *track) {
   track->voice = NULL;
 }
 
-/**
- * @return if voice
- */
-static int allocate_and_set_voice(engine_t *engine, track_t *track,
-                                  uint32_t now, const event_data_t *event) {
-  uint32_t frequency;
-  const envelope_data_t *envelope;
+static void allocate_and_set_voice(engine_t *engine, track_t *track,
+                                   uint32_t now, const event_data_t *event) {
+  uint32_t frequency, velocity;
 
   frequency = transpose_frequency(event->frequency, track->data->transpose);
+  velocity = calculate_velocity(track->envelope, now, event->velocity,
+                                event->time, event->duration);
 
   if (!track->voice) {
-    if (!track->cache ||
-        (track->cache->owner && track->cache->owner != track)) {
-      track->voice = allocate_voice(engine, frequency, event->velocity);
-    } else {
+    if (track->cache && track->cache->owner == track) {
       track->voice = track->cache;
+    } else {
+      track->voice = allocate_voice(engine, frequency, event->velocity);
+    }
+
+    if (!track->voice) {
+      return;
     }
   }
 
-  if (track->voice) {
-    envelope = get_envelope(engine, track->data->program);
+  track->voice->owner = track;
+  track->voice->current_velocity = event->velocity;
 
-    track->voice->owner = track;
-    track->voice->current_velocity = event->velocity;
-
-    set_voice(engine, track->voice, envelope, now, frequency, event->velocity,
-              event->time, event->duration);
-    return 1;
-  }
-
-  return 0;
+  set_voice(engine, track->voice, frequency, velocity);
 }
 
-/**
- * @return if end
- */
 static int track_spin(engine_t *engine, track_t *track, uint32_t now) {
 
   const event_data_t *event;
@@ -317,15 +303,14 @@ static int track_spin(engine_t *engine, track_t *track, uint32_t now) {
 
   if (now < event->time + event->duration) {
     if (now >= event->time) {
-      track->active = allocate_and_set_voice(engine, track, now, event);
+      allocate_and_set_voice(engine, track, now, event);
     }
     return 0;
   }
 
   while (now >= event->time + event->duration) {
     if (++track->current_event >= track->data->event_count) {
-      track->active = 0;
-      free_and_set_voice(track);
+      free_and_clear_voice(track);
       return 1;
     }
 
@@ -333,12 +318,11 @@ static int track_spin(engine_t *engine, track_t *track, uint32_t now) {
   }
 
   if (now < event->time) {
-    track->active = 0;
-    free_and_set_voice(track);
+    free_and_clear_voice(track);
     return 0;
   }
 
-  track->active = allocate_and_set_voice(engine, track, now, event);
+  allocate_and_set_voice(engine, track, now, event);
   return 0;
 }
 
@@ -372,7 +356,8 @@ void engine_init(
     track->data = tracks + i;
 
     track->current_event = 0;
-    track->active = 0;
+
+    track->envelope = get_envelope(engine, track->data->program);
 
     track->voice = NULL;
     track->cache = NULL;

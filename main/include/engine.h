@@ -53,7 +53,8 @@ struct __track {
   const track_data_t *data;
 
   uint32_t current_event;
-  int active;
+
+  const envelope_data_t *envelope;
 
   voice_t *voice;
   voice_t *cache;

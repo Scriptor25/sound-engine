@@ -6,7 +6,7 @@ import re
 def midi_note_to_freq(note):
     return 440.0 * (2.0 ** ((note - 69) / 12.0))
 
-def split_voices(notes):
+def split_voices(notes, overlap = 0.005):
     notes = sorted(notes, key=lambda n: n.start)
 
     voices = []
@@ -15,8 +15,12 @@ def split_voices(notes):
         placed = False
 
         for voice in voices:
-            last_note = voice[-1]
-            if note.start >= last_note.end:
+            last = voice[-1]
+
+            if note.start >= last.end - overlap:
+                if note.start < last.end:
+                    last.end = note.start
+
                 voice.append(note)
                 placed = True
                 break
