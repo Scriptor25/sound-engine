@@ -61,7 +61,7 @@ struct __track {
 };
 
 struct __voice {
-  int active;
+  track_t *owner;
 
   ledc_timer_t timer;
   ledc_channel_t channel;

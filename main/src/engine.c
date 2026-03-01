@@ -138,7 +138,7 @@ static void set_voice(engine_t *engine, voice_t *voice, uint32_t frequency,
 }
 
 static voice_t *find_voice(engine_t *engine, uint32_t now, uint32_t frequency,
-                           uint32_t velocity, int ignore_active,
+                           uint32_t velocity, int ignore_owner,
                            int ignore_frequency, int ignore_cooldown) {
   size_t i;
   voice_t *voice;
@@ -146,7 +146,7 @@ static voice_t *find_voice(engine_t *engine, uint32_t now, uint32_t frequency,
   for (i = 0; i < engine->voice_count; ++i) {
     voice = engine->voices + i;
 
-    if (!ignore_active && voice->active) {
+    if (!ignore_owner && voice->owner) {
       continue;
     }
 
@@ -218,7 +218,7 @@ static void free_and_clear_voice(track_t *track, uint32_t now) {
 
   clear_voice(track->voice);
 
-  track->voice->active = 0;
+  track->voice->owner = NULL;
   track->voice->current_velocity = 0;
   track->voice->cooldown_end = now + ENGINE_VOICE_COOLDOWN;
   track->voice = NULL;
@@ -233,18 +233,22 @@ static void allocate_and_set_voice(engine_t *engine, track_t *track,
                                 event->time, event->duration);
 
   if (!track->voice) {
-    if (track->cache && !track->cache->active) {
+    if (track->cache && !track->cache->owner) {
       track->voice = track->cache;
     } else {
       track->voice = allocate_voice(engine, now, frequency, event->velocity);
-    }
 
-    if (!track->voice) {
-      return;
+      if (!track->voice) {
+        return;
+      }
+
+      if (track->voice->owner) {
+        track->voice->owner->voice = NULL;
+      }
     }
   }
 
-  track->voice->active = 1;
+  track->voice->owner = track;
   track->voice->current_velocity = event->velocity;
 
   set_voice(engine, track->voice, frequency / 1000, velocity);
@@ -336,7 +340,7 @@ void engine_init(
   for (i = 0; i < engine->voice_count; ++i) {
     voice = engine->voices + i;
 
-    voice->active = 0;
+    voice->owner = NULL;
 
     voice->timer = (ledc_timer_t)i;
     voice->channel = (ledc_channel_t)i;
