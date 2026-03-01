@@ -13,7 +13,6 @@
         (FTY)(DMIN)))
 
 #define ENGINE_VOICE_MAX MIN(LEDC_TIMER_MAX, LEDC_CHANNEL_MAX)
-#define ENGINE_VOICE_STEALING true
 #define ENGINE_VOICE_COOLDOWN 100
 
 typedef struct __event_data event_data_t;
@@ -62,7 +61,7 @@ struct __track {
 };
 
 struct __voice {
-  track_t *owner;
+  int active;
 
   ledc_timer_t timer;
   ledc_channel_t channel;

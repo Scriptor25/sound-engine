@@ -60,7 +60,7 @@ def generate_c(tracks, name):
     for track_name, program, events in tracks:
         print(f"const event_data_t {name}_{track_name}[] = {{")
         for freq, time, duration, velocity in events:
-            print(f"  {{{int(freq)}, {int(time)}, {int(duration)}, {int(velocity)}}},{" // long note" if duration >= 4000 else ""}")
+            print(f"  {{{int(freq * 1000)}, {int(time)}, {int(duration)}, {int(velocity)}}},{" // long note" if duration >= 4000 else ""}")
         print("};\n")
 
     print(f"const track_data_t {name}_data[] = {{")
