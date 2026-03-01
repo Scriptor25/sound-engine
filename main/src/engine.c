@@ -43,7 +43,8 @@ static int find_suitable_resolution(uint32_t frequency,
   return 0;
 }
 
-static void set_voice(voice_t *voice, uint32_t frequency, uint32_t velocity) {
+static void set_voice(engine_t *engine, voice_t *voice, uint32_t frequency,
+                      uint32_t velocity) {
 
   if (!frequency || !velocity) {
     ledc_set_duty(LEDC_LOW_SPEED_MODE, voice->channel, 0);
@@ -78,7 +79,7 @@ static void set_voice(voice_t *voice, uint32_t frequency, uint32_t velocity) {
   }
 
   uint32_t duty =
-      MAP(uint32_t, float, 0, ENGINE_VELOCITY_MAX, 0, max_duty, velocity);
+      MAP(uint32_t, float, 0, engine->max_velocity, 0, max_duty, velocity);
 
   ledc_set_duty(LEDC_LOW_SPEED_MODE, voice->channel, duty);
   ledc_update_duty(LEDC_LOW_SPEED_MODE, voice->channel);
@@ -190,14 +191,14 @@ static voice_t *allocate_voice(engine_t *engine, uint32_t frequency,
   return NULL;
 }
 
-static void free_and_set_voice(track_t *track) {
+static void free_and_set_voice(engine_t *engine, track_t *track) {
   if (!track->voice) {
     return;
   }
 
   track->cache = track->voice;
 
-  set_voice(track->voice, 0, 0);
+  set_voice(engine, track->voice, 0, 0);
 
   track->voice->owner = NULL;
   track->voice->current_velocity = 0;
@@ -223,7 +224,7 @@ static int allocate_and_set_voice(engine_t *engine, track_t *track,
   if (track->voice) {
     track->voice->owner = track;
     track->voice->current_velocity = event->velocity;
-    set_voice(track->voice, frequency, event->velocity);
+    set_voice(engine, track->voice, frequency, event->velocity);
     return 1;
   }
 
@@ -253,7 +254,7 @@ static int track_spin(engine_t *engine, track_t *track, uint32_t now) {
   while (now >= event->time + event->duration) {
     if (++track->current_event >= track->event_count) {
       track->active = 0;
-      free_and_set_voice(track);
+      free_and_set_voice(engine, track);
       return 1;
     }
 
@@ -262,7 +263,7 @@ static int track_spin(engine_t *engine, track_t *track, uint32_t now) {
 
   if (now < event->time) {
     track->active = 0;
-    free_and_set_voice(track);
+    free_and_set_voice(engine, track);
     return 0;
   }
 
@@ -279,6 +280,8 @@ void engine_init(
     const int *pins, size_t pin_count
 
 ) {
+  engine->max_velocity = 0;
+
   engine->track_count = track_count;
   engine->tracks = (track_t *)calloc(engine->track_count, sizeof(track_t));
 
@@ -297,6 +300,14 @@ void engine_init(
 
     track->voice = NULL;
     track->cache = NULL;
+
+    for (size_t j = 0; j < track->event_count; ++j) {
+      const event_data_t *event = track->events + j;
+
+      if (engine->max_velocity < event->velocity) {
+        engine->max_velocity = event->velocity;
+      }
+    }
   }
 
   engine->voice_count = MIN(pin_count, ENGINE_VOICE_MAX);
@@ -331,7 +342,7 @@ void engine_terminate(engine_t *engine) {
   for (size_t i = 0; i < engine->voice_count; ++i) {
     voice_t *voice = engine->voices + i;
 
-    set_voice(voice, 0, 0);
+    set_voice(engine, voice, 0, 0);
   }
 
   free(engine->tracks);

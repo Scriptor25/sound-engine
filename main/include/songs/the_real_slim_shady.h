@@ -2,7 +2,7 @@
 
 #include <engine.h>
 
-const event_data_t therealslimshady_harpchord[] = {
+const event_data_t the_real_slim_shady_harpchord[] = {
   {523, 0, 142, 127},
   {622, 285, 142, 127},
   {391, 571, 142, 127},
@@ -759,7 +759,7 @@ const event_data_t therealslimshady_harpchord[] = {
   {391, 264853, 142, 1},
 };
 
-const event_data_t therealslimshady_bass[] = {
+const event_data_t the_real_slim_shady_bass[] = {
   {65, 0, 285, 127},
   {73, 571, 285, 127},
   {77, 857, 285, 127},
@@ -1284,7 +1284,7 @@ const event_data_t therealslimshady_bass[] = {
   {97, 264853, 285, 1},
 };
 
-const event_data_t therealslimshady_piano[] = {
+const event_data_t the_real_slim_shady_piano[] = {
   {1046, 17428, 285, 127},
   {1244, 17428, 285, 127},
   {1244, 17714, 285, 71},
@@ -1379,7 +1379,7 @@ const event_data_t therealslimshady_piano[] = {
   {1046, 246282, 285, 71},
 };
 
-const event_data_t therealslimshady_guitar[] = {
+const event_data_t the_real_slim_shady_guitar[] = {
   {195, 82284, 142, 82},
   {261, 82570, 142, 127},
   {261, 83427, 142, 80},
@@ -1640,7 +1640,7 @@ const event_data_t therealslimshady_guitar[] = {
   {195, 264853, 142, 1},
 };
 
-const event_data_t therealslimshady_strings[] = {
+const event_data_t the_real_slim_shady_strings[] = {
   {523, 82284, 1142, 86},
   {622, 83427, 1142, 86},
   {523, 84570, 1142, 86},
@@ -1707,14 +1707,14 @@ const event_data_t therealslimshady_strings[] = {
   {391, 245710, 1142, 86},
 };
 
-const event_data_t therealslimshady_revcymbal[] = {
+const event_data_t the_real_slim_shady_revcymbal[] = {
   {8, 81141, 1142, 127},
   {8, 145140, 1142, 127},
   {8, 209139, 1142, 127},
   {8, 227425, 1142, 127},
 };
 
-const event_data_t therealslimshady_flute[] = {
+const event_data_t the_real_slim_shady_flute[] = {
   {1174, 228568, 571, 127},
   {1046, 229139, 571, 127},
   {830, 229710, 571, 127},
@@ -1781,12 +1781,12 @@ const event_data_t therealslimshady_flute[] = {
   {523, 264567, 571, 6},
 };
 
-const track_data_t therealslimshady_data[] = {
-  { .events = therealslimshady_harpchord, .event_count = sizeof(therealslimshady_harpchord) / sizeof(event_data_t), 0 },
-  { .events = therealslimshady_bass, .event_count = sizeof(therealslimshady_bass) / sizeof(event_data_t), 0 },
-  { .events = therealslimshady_piano, .event_count = sizeof(therealslimshady_piano) / sizeof(event_data_t), 0 },
-  { .events = therealslimshady_guitar, .event_count = sizeof(therealslimshady_guitar) / sizeof(event_data_t), 0 },
-  { .events = therealslimshady_strings, .event_count = sizeof(therealslimshady_strings) / sizeof(event_data_t), 0 },
-  { .events = therealslimshady_revcymbal, .event_count = sizeof(therealslimshady_revcymbal) / sizeof(event_data_t), 0 },
-  { .events = therealslimshady_flute, .event_count = sizeof(therealslimshady_flute) / sizeof(event_data_t), 0 },
+const track_data_t the_real_slim_shady_data[] = {
+  { .events = the_real_slim_shady_harpchord, .event_count = sizeof(the_real_slim_shady_harpchord) / sizeof(event_data_t), 0 },
+  { .events = the_real_slim_shady_bass, .event_count = sizeof(the_real_slim_shady_bass) / sizeof(event_data_t), 0 },
+  { .events = the_real_slim_shady_piano, .event_count = sizeof(the_real_slim_shady_piano) / sizeof(event_data_t), 0 },
+  { .events = the_real_slim_shady_guitar, .event_count = sizeof(the_real_slim_shady_guitar) / sizeof(event_data_t), 0 },
+  { .events = the_real_slim_shady_strings, .event_count = sizeof(the_real_slim_shady_strings) / sizeof(event_data_t), 0 },
+  { .events = the_real_slim_shady_revcymbal, .event_count = sizeof(the_real_slim_shady_revcymbal) / sizeof(event_data_t), 0 },
+  { .events = the_real_slim_shady_flute, .event_count = sizeof(the_real_slim_shady_flute) / sizeof(event_data_t), 0 },
 };

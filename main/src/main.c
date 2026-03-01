@@ -1,5 +1,5 @@
 #include <engine.h>
-#include <freebird.h>
+#include <songs/golden.h>
 
 #include <stdio.h>
 
@@ -14,7 +14,7 @@ void app_main(void) {
 
       &engine,
 
-      freebird_data, sizeof(freebird_data) / sizeof(track_data_t),
+      golden_data, sizeof(golden_data) / sizeof(track_data_t),
 
       PINS, sizeof(PINS) / sizeof(int)
 

@@ -2,7 +2,7 @@
 
 #include <engine.h>
 
-const event_data_t freebird_track1[] = {
+const event_data_t free_bird_track1[] = {
   {783, 2020, 364, 76},
   {783, 2244, 140, 90},
   {880, 2359, 140, 103},
@@ -2876,7 +2876,7 @@ const event_data_t freebird_track1[] = {
   {164, 424477, 1516, 40},
 };
 
-const event_data_t freebird_track2[] = {
+const event_data_t free_bird_track2[] = {
   {493, 51000, 291, 106},
   {587, 51255, 421, 106},
   {493, 51739, 791, 108},
@@ -2994,7 +2994,7 @@ const event_data_t freebird_track2[] = {
   {293, 136973, 322, 86},
 };
 
-const event_data_t freebird_track3[] = {
+const event_data_t free_bird_track3[] = {
   {391, 17984, 3682, 96},
   {391, 22000, 260, 104},
   {369, 22239, 255, 87},
@@ -3163,7 +3163,7 @@ const event_data_t freebird_track3[] = {
   {261, 380052, 283, 99},
 };
 
-const event_data_t freebird_track4[] = {
+const event_data_t free_bird_track4[] = {
   {987, 170723, 119, 120},
   {880, 170833, 88, 120},
   {783, 170963, 510, 127},
@@ -3288,7 +3288,7 @@ const event_data_t freebird_track4[] = {
   {1174, 230041, 828, 114},
 };
 
-const event_data_t freebird_track5[] = {
+const event_data_t free_bird_track5[] = {
   {783, 202265, 692, 77},
   {1174, 202729, 265, 74},
   {987, 202494, 755, 80},
@@ -3391,7 +3391,7 @@ const event_data_t freebird_track5[] = {
   {523, 229708, 890, 81},
 };
 
-const event_data_t freebird_track6[] = {
+const event_data_t free_bird_track6[] = {
   {493, 219015, 515, 114},
   {587, 219510, 458, 114},
   {493, 219994, 781, 120},
@@ -3524,7 +3524,7 @@ const event_data_t freebird_track6[] = {
   {587, 298089, 145, 120},
 };
 
-const event_data_t freebird_track7[] = {
+const event_data_t free_bird_track7[] = {
   {391, 297494, 112, 88},
   {440, 297585, 150, 96},
   {523, 297702, 137, 102},
@@ -4038,7 +4038,7 @@ const event_data_t freebird_track7[] = {
   {587, 426056, 20, 13},
 };
 
-const event_data_t freebird_track8[] = {
+const event_data_t free_bird_track8[] = {
   {97, 2000, 625, 72},
   {92, 4010, 619, 70},
   {82, 6015, 609, 85},
@@ -5079,7 +5079,7 @@ const event_data_t freebird_track8[] = {
   {65, 425889, 120, 14},
 };
 
-const event_data_t freebird_track9[] = {
+const event_data_t free_bird_track9[] = {
   {349, 292016, 68, 111},
   {391, 292012, 299, 94},
   {391, 292444, 429, 109},
@@ -5746,14 +5746,14 @@ const event_data_t freebird_track9[] = {
   {293, 425860, 216, 15},
 };
 
-const track_data_t freebird_data[] = {
-  { .events = freebird_track1, .event_count = sizeof(freebird_track1) / sizeof(event_data_t), 0 },
-  { .events = freebird_track2, .event_count = sizeof(freebird_track2) / sizeof(event_data_t), 0 },
-  { .events = freebird_track3, .event_count = sizeof(freebird_track3) / sizeof(event_data_t), 0 },
-  { .events = freebird_track4, .event_count = sizeof(freebird_track4) / sizeof(event_data_t), 0 },
-  { .events = freebird_track5, .event_count = sizeof(freebird_track5) / sizeof(event_data_t), 0 },
-  { .events = freebird_track6, .event_count = sizeof(freebird_track6) / sizeof(event_data_t), 0 },
-  { .events = freebird_track7, .event_count = sizeof(freebird_track7) / sizeof(event_data_t), 0 },
-  { .events = freebird_track8, .event_count = sizeof(freebird_track8) / sizeof(event_data_t), 0 },
-  { .events = freebird_track9, .event_count = sizeof(freebird_track9) / sizeof(event_data_t), 0 },
+const track_data_t free_bird_data[] = {
+  { .events = free_bird_track1, .event_count = sizeof(free_bird_track1) / sizeof(event_data_t), 0 },
+  { .events = free_bird_track2, .event_count = sizeof(free_bird_track2) / sizeof(event_data_t), 0 },
+  { .events = free_bird_track3, .event_count = sizeof(free_bird_track3) / sizeof(event_data_t), 0 },
+  { .events = free_bird_track4, .event_count = sizeof(free_bird_track4) / sizeof(event_data_t), 0 },
+  { .events = free_bird_track5, .event_count = sizeof(free_bird_track5) / sizeof(event_data_t), 0 },
+  { .events = free_bird_track6, .event_count = sizeof(free_bird_track6) / sizeof(event_data_t), 0 },
+  { .events = free_bird_track7, .event_count = sizeof(free_bird_track7) / sizeof(event_data_t), 0 },
+  { .events = free_bird_track8, .event_count = sizeof(free_bird_track8) / sizeof(event_data_t), 0 },
+  { .events = free_bird_track9, .event_count = sizeof(free_bird_track9) / sizeof(event_data_t), 0 },
 };

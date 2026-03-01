@@ -14,7 +14,6 @@
 
 #define ENGINE_VOICE_MAX MIN(LEDC_TIMER_MAX, LEDC_CHANNEL_MAX)
 #define ENGINE_VOICE_STEALING true
-#define ENGINE_VELOCITY_MAX 127
 
 typedef struct __event_data event_data_t;
 typedef struct __track_data track_data_t;
@@ -66,6 +65,8 @@ struct __engine {
 
   voice_t *voices;
   size_t voice_count;
+
+  uint32_t max_velocity;
 };
 
 void engine_init(
