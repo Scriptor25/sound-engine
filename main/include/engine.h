@@ -13,7 +13,6 @@
         (FTY)(DMIN)))
 
 #define ENGINE_VOICE_MAX MIN(LEDC_TIMER_MAX, LEDC_CHANNEL_MAX)
-#define ENGINE_VOICE_COOLDOWN 100
 
 typedef struct __event_data event_data_t;
 typedef struct __track_data track_data_t;
@@ -56,19 +55,17 @@ struct __track {
 
   const envelope_data_t *envelope;
 
-  voice_t *voice;
-  voice_t *cache;
+  voice_t *voice, *cache;
 };
 
 struct __voice {
-  track_t *owner;
-
   ledc_timer_t timer;
   ledc_channel_t channel;
 
   uint32_t current_frequency, current_resolution;
-  uint32_t current_velocity;
-  uint32_t cooldown_end;
+
+  track_t *current_owner;
+  uint32_t current_velocity, current_cooldown;
 };
 
 struct __engine {
