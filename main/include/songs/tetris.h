@@ -660,7 +660,7 @@ const event_data_t tetris_instrument5[] = {
 };
 
 const track_data_t tetris_data[] = {
-  { .events = tetris_instrument_1, .event_count = sizeof(tetris_instrument_1) / sizeof(event_data_t), 0 },
-  { .events = tetris_instrument2, .event_count = sizeof(tetris_instrument2) / sizeof(event_data_t), 0 },
-  { .events = tetris_instrument5, .event_count = sizeof(tetris_instrument5) / sizeof(event_data_t), 0 },
+  { 25, tetris_instrument_1, sizeof(tetris_instrument_1) / sizeof(event_data_t), 0 },
+  { 25, tetris_instrument2, sizeof(tetris_instrument2) / sizeof(event_data_t), 0 },
+  { 32, tetris_instrument5, sizeof(tetris_instrument5) / sizeof(event_data_t), 0 },
 };

@@ -17,6 +17,7 @@
 
 typedef struct __event_data event_data_t;
 typedef struct __track_data track_data_t;
+typedef struct __envelope_data envelope_data_t;
 
 struct __event_data {
   uint32_t frequency;
@@ -26,10 +27,22 @@ struct __event_data {
 };
 
 struct __track_data {
+  uint32_t program;
+
   const event_data_t *events;
   size_t event_count;
 
   int transpose;
+};
+
+struct __envelope_data {
+  uint32_t program_from;
+  uint32_t program_to;
+
+  uint32_t attack;
+  uint32_t decay;
+  uint32_t sustain;
+  uint32_t release;
 };
 
 typedef struct __track track_t;
@@ -37,10 +50,7 @@ typedef struct __voice voice_t;
 typedef struct __engine engine_t;
 
 struct __track {
-  const event_data_t *events;
-  size_t event_count;
-
-  int transpose;
+  const track_data_t *data;
 
   uint32_t current_event;
   int active;
@@ -60,6 +70,9 @@ struct __voice {
 };
 
 struct __engine {
+  const envelope_data_t *envelopes;
+  size_t envelope_count;
+
   track_t *tracks;
   size_t track_count;
 
@@ -72,6 +85,8 @@ struct __engine {
 void engine_init(
 
     engine_t *engine,
+
+    const envelope_data_t *envelopes, size_t envelope_count,
 
     const track_data_t *tracks, size_t track_count,
 

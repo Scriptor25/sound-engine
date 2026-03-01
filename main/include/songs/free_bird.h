@@ -5747,13 +5747,13 @@ const event_data_t free_bird_track9[] = {
 };
 
 const track_data_t free_bird_data[] = {
-  { .events = free_bird_track1, .event_count = sizeof(free_bird_track1) / sizeof(event_data_t), 0 },
-  { .events = free_bird_track2, .event_count = sizeof(free_bird_track2) / sizeof(event_data_t), 0 },
-  { .events = free_bird_track3, .event_count = sizeof(free_bird_track3) / sizeof(event_data_t), 0 },
-  { .events = free_bird_track4, .event_count = sizeof(free_bird_track4) / sizeof(event_data_t), 0 },
-  { .events = free_bird_track5, .event_count = sizeof(free_bird_track5) / sizeof(event_data_t), 0 },
-  { .events = free_bird_track6, .event_count = sizeof(free_bird_track6) / sizeof(event_data_t), 0 },
-  { .events = free_bird_track7, .event_count = sizeof(free_bird_track7) / sizeof(event_data_t), 0 },
-  { .events = free_bird_track8, .event_count = sizeof(free_bird_track8) / sizeof(event_data_t), 0 },
-  { .events = free_bird_track9, .event_count = sizeof(free_bird_track9) / sizeof(event_data_t), 0 },
+  { 0, free_bird_track1, sizeof(free_bird_track1) / sizeof(event_data_t), 0 },
+  { 73, free_bird_track2, sizeof(free_bird_track2) / sizeof(event_data_t), 0 },
+  { 29, free_bird_track3, sizeof(free_bird_track3) / sizeof(event_data_t), 0 },
+  { 0, free_bird_track4, sizeof(free_bird_track4) / sizeof(event_data_t), 0 },
+  { 0, free_bird_track5, sizeof(free_bird_track5) / sizeof(event_data_t), 0 },
+  { 73, free_bird_track6, sizeof(free_bird_track6) / sizeof(event_data_t), 0 },
+  { 30, free_bird_track7, sizeof(free_bird_track7) / sizeof(event_data_t), 0 },
+  { 35, free_bird_track8, sizeof(free_bird_track8) / sizeof(event_data_t), 0 },
+  { 32, free_bird_track9, sizeof(free_bird_track9) / sizeof(event_data_t), 0 },
 };

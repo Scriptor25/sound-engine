@@ -2,6 +2,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -28,13 +29,18 @@ static uint32_t transpose_frequency(uint32_t frequency, int transpose) {
 static int find_suitable_resolution(uint32_t frequency,
                                     uint32_t clock_frequency,
                                     uint32_t *result) {
-  for (int resolution = LEDC_TIMER_BIT_MAX - 1; resolution >= LEDC_TIMER_1_BIT;
+  int resolution;
+  uint32_t divider;
+
+  for (resolution = LEDC_TIMER_BIT_MAX - 1; resolution >= LEDC_TIMER_1_BIT;
        --resolution) {
 
-    uint32_t divider = clock_frequency / (frequency * (1 << resolution));
+    divider = clock_frequency / (frequency * (1 << resolution));
     if (divider >= 1 && divider < 1024) {
 
-      (void)(result && (*result = resolution));
+      if (result) {
+        *result = resolution;
+      }
 
       return 1;
     }
@@ -43,16 +49,65 @@ static int find_suitable_resolution(uint32_t frequency,
   return 0;
 }
 
-static void set_voice(engine_t *engine, voice_t *voice, uint32_t frequency,
-                      uint32_t velocity) {
+static const envelope_data_t *get_envelope(engine_t *engine, uint32_t program) {
+  size_t i;
 
-  if (!frequency || !velocity) {
-    ledc_set_duty(LEDC_LOW_SPEED_MODE, voice->channel, 0);
-    ledc_update_duty(LEDC_LOW_SPEED_MODE, voice->channel);
+  for (i = 0; i < engine->envelope_count; ++i) {
+    const envelope_data_t *envelope = engine->envelopes + i;
+
+    if (envelope->program_from <= program && program < envelope->program_to) {
+      return envelope;
+    }
+  }
+
+  return NULL;
+}
+
+static uint32_t calculate_velocity(const envelope_data_t *envelope,
+                                   uint32_t now, uint32_t velocity,
+                                   uint32_t begin, uint32_t duration) {
+  uint32_t age, mod, d, delta, r;
+
+  age = now - begin;
+  mod = 1000;
+
+  if (age < envelope->attack) {
+    mod = (age * 1000) / envelope->attack;
+  } else if (age < envelope->attack + envelope->decay) {
+    d = age - envelope->attack;
+    delta = 1000 - envelope->sustain;
+
+    mod = 1000 - (d * delta) / envelope->decay;
+  } else if (age < duration - envelope->release) {
+    mod = envelope->sustain;
+  } else if (age < duration) {
+    r = age - (duration - envelope->release);
+
+    mod = (envelope->sustain * (envelope->release - r)) / envelope->release;
+  } else {
+    mod = 0;
+  }
+
+  return (velocity * mod) / 1000;
+}
+
+static void clear_voice(voice_t *voice) {
+  ledc_set_duty(LEDC_LOW_SPEED_MODE, voice->channel, 0);
+  ledc_update_duty(LEDC_LOW_SPEED_MODE, voice->channel);
+}
+
+static void set_voice(engine_t *engine, voice_t *voice,
+                      const envelope_data_t *envelope, uint32_t now,
+                      uint32_t frequency, uint32_t velocity, uint32_t begin,
+                      uint32_t duration) {
+
+  uint32_t max_duty, resolution, duty;
+
+  if (!engine || !envelope || !frequency || !velocity || !duration) {
+    clear_voice(voice);
     return;
   }
 
-  uint32_t max_duty, resolution;
   if (voice->current_frequency == frequency) {
     max_duty = ((1 << voice->current_resolution) - 1) >> 4;
   } else if (find_suitable_resolution(frequency, 80000000, &resolution)) {
@@ -78,17 +133,20 @@ static void set_voice(engine_t *engine, voice_t *voice, uint32_t frequency,
     max_duty = 0;
   }
 
-  uint32_t duty =
-      MAP(uint32_t, float, 0, engine->max_velocity, 0, max_duty, velocity);
+  velocity = calculate_velocity(envelope, now, velocity, begin, duration);
+
+  duty = MAP(uint32_t, float, 0, engine->max_velocity, 0, max_duty, velocity);
 
   ledc_set_duty(LEDC_LOW_SPEED_MODE, voice->channel, duty);
   ledc_update_duty(LEDC_LOW_SPEED_MODE, voice->channel);
 }
 
 static voice_t *find_free_perfect_voice(engine_t *engine, uint32_t frequency) {
+  size_t i;
+  voice_t *voice;
 
-  for (size_t i = 0; i < engine->voice_count; ++i) {
-    voice_t *voice = engine->voices + i;
+  for (i = 0; i < engine->voice_count; ++i) {
+    voice = engine->voices + i;
 
     if (voice->owner && voice->owner->voice == voice) {
       continue;
@@ -105,9 +163,11 @@ static voice_t *find_free_perfect_voice(engine_t *engine, uint32_t frequency) {
 }
 
 static voice_t *find_free_voice(engine_t *engine) {
+  size_t i;
+  voice_t *voice;
 
-  for (size_t i = 0; i < engine->voice_count; ++i) {
-    voice_t *voice = engine->voices + i;
+  for (i = 0; i < engine->voice_count; ++i) {
+    voice = engine->voices + i;
 
     if (voice->owner && voice->owner->voice == voice) {
       continue;
@@ -121,9 +181,11 @@ static voice_t *find_free_voice(engine_t *engine) {
 
 static voice_t *find_first_perfect_voice(engine_t *engine, uint32_t frequency,
                                          uint32_t velocity) {
+  size_t i;
+  voice_t *voice;
 
-  for (size_t i = 0; i < engine->voice_count; ++i) {
-    voice_t *voice = engine->voices + i;
+  for (i = 0; i < engine->voice_count; ++i) {
+    voice = engine->voices + i;
 
     if (voice->current_frequency != frequency) {
       continue;
@@ -140,9 +202,11 @@ static voice_t *find_first_perfect_voice(engine_t *engine, uint32_t frequency,
 }
 
 static voice_t *find_first_voice(engine_t *engine, uint32_t velocity) {
+  size_t i;
+  voice_t *voice;
 
-  for (size_t i = 0; i < engine->voice_count; ++i) {
-    voice_t *voice = engine->voices + i;
+  for (i = 0; i < engine->voice_count; ++i) {
+    voice = engine->voices + i;
 
     if (voice->current_velocity >= velocity) {
       continue;
@@ -191,14 +255,14 @@ static voice_t *allocate_voice(engine_t *engine, uint32_t frequency,
   return NULL;
 }
 
-static void free_and_set_voice(engine_t *engine, track_t *track) {
+static void free_and_set_voice(track_t *track) {
   if (!track->voice) {
     return;
   }
 
   track->cache = track->voice;
 
-  set_voice(engine, track->voice, 0, 0);
+  clear_voice(track->voice);
 
   track->voice->owner = NULL;
   track->voice->current_velocity = 0;
@@ -209,8 +273,11 @@ static void free_and_set_voice(engine_t *engine, track_t *track) {
  * @return if voice
  */
 static int allocate_and_set_voice(engine_t *engine, track_t *track,
-                                  const event_data_t *event) {
-  uint32_t frequency = transpose_frequency(event->frequency, track->transpose);
+                                  uint32_t now, const event_data_t *event) {
+  uint32_t frequency;
+  const envelope_data_t *envelope;
+
+  frequency = transpose_frequency(event->frequency, track->data->transpose);
 
   if (!track->voice) {
     if (!track->cache ||
@@ -222,9 +289,13 @@ static int allocate_and_set_voice(engine_t *engine, track_t *track,
   }
 
   if (track->voice) {
+    envelope = get_envelope(engine, track->data->program);
+
     track->voice->owner = track;
     track->voice->current_velocity = event->velocity;
-    set_voice(engine, track->voice, frequency, event->velocity);
+
+    set_voice(engine, track->voice, envelope, now, frequency, event->velocity,
+              event->time, event->duration);
     return 1;
   }
 
@@ -238,36 +309,36 @@ static int track_spin(engine_t *engine, track_t *track, uint32_t now) {
 
   const event_data_t *event;
 
-  if (track->current_event >= track->event_count) {
+  if (track->current_event >= track->data->event_count) {
     return 1;
   }
 
-  event = track->events + track->current_event;
+  event = track->data->events + track->current_event;
 
   if (now < event->time + event->duration) {
-    if (!track->active && now >= event->time) {
-      track->active = allocate_and_set_voice(engine, track, event);
+    if (now >= event->time) {
+      track->active = allocate_and_set_voice(engine, track, now, event);
     }
     return 0;
   }
 
   while (now >= event->time + event->duration) {
-    if (++track->current_event >= track->event_count) {
+    if (++track->current_event >= track->data->event_count) {
       track->active = 0;
-      free_and_set_voice(engine, track);
+      free_and_set_voice(track);
       return 1;
     }
 
-    event = track->events + track->current_event;
+    event = track->data->events + track->current_event;
   }
 
   if (now < event->time) {
     track->active = 0;
-    free_and_set_voice(engine, track);
+    free_and_set_voice(track);
     return 0;
   }
 
-  track->active = allocate_and_set_voice(engine, track, event);
+  track->active = allocate_and_set_voice(engine, track, now, event);
   return 0;
 }
 
@@ -275,25 +346,30 @@ void engine_init(
 
     engine_t *engine,
 
+    const envelope_data_t *envelopes, size_t envelope_count,
+
     const track_data_t *tracks, size_t track_count,
 
     const int *pins, size_t pin_count
 
 ) {
+  size_t i, j;
+  track_t *track;
+  voice_t *voice;
+  const event_data_t *event;
+
+  engine->envelopes = envelopes;
+  engine->envelope_count = envelope_count;
+
   engine->max_velocity = 0;
 
   engine->track_count = track_count;
   engine->tracks = (track_t *)calloc(engine->track_count, sizeof(track_t));
 
-  for (size_t i = 0; i < engine->track_count; ++i) {
+  for (i = 0; i < engine->track_count; ++i) {
+    track = engine->tracks + i;
 
-    const track_data_t *track_data = tracks + i;
-    track_t *track = engine->tracks + i;
-
-    track->events = track_data->events;
-    track->event_count = track_data->event_count;
-
-    track->transpose = track_data->transpose;
+    track->data = tracks + i;
 
     track->current_event = 0;
     track->active = 0;
@@ -301,8 +377,8 @@ void engine_init(
     track->voice = NULL;
     track->cache = NULL;
 
-    for (size_t j = 0; j < track->event_count; ++j) {
-      const event_data_t *event = track->events + j;
+    for (j = 0; j < track->data->event_count; ++j) {
+      event = track->data->events + j;
 
       if (engine->max_velocity < event->velocity) {
         engine->max_velocity = event->velocity;
@@ -313,8 +389,8 @@ void engine_init(
   engine->voice_count = MIN(pin_count, ENGINE_VOICE_MAX);
   engine->voices = (voice_t *)calloc(engine->voice_count, sizeof(voice_t));
 
-  for (size_t i = 0; i < engine->voice_count; ++i) {
-    voice_t *voice = engine->voices + i;
+  for (i = 0; i < engine->voice_count; ++i) {
+    voice = engine->voices + i;
 
     voice->owner = NULL;
 
@@ -338,11 +414,10 @@ void engine_init(
 }
 
 void engine_terminate(engine_t *engine) {
+  size_t i;
 
-  for (size_t i = 0; i < engine->voice_count; ++i) {
-    voice_t *voice = engine->voices + i;
-
-    set_voice(engine, voice, 0, 0);
+  for (i = 0; i < engine->voice_count; ++i) {
+    clear_voice(engine->voices + i);
   }
 
   free(engine->tracks);
@@ -356,11 +431,14 @@ void engine_terminate(engine_t *engine) {
 }
 
 int engine_spin(engine_t *engine) {
+  uint32_t now;
+  int end;
+  size_t i;
 
-  uint32_t now = get_now();
+  now = get_now();
 
-  int end = 1;
-  for (size_t i = 0; i < engine->track_count; ++i)
+  end = 1;
+  for (i = 0; i < engine->track_count; ++i)
     end &= track_spin(engine, engine->tracks + i, now);
 
   return end;

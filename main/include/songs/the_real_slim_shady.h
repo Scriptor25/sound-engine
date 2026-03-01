@@ -1782,11 +1782,11 @@ const event_data_t the_real_slim_shady_flute[] = {
 };
 
 const track_data_t the_real_slim_shady_data[] = {
-  { .events = the_real_slim_shady_harpchord, .event_count = sizeof(the_real_slim_shady_harpchord) / sizeof(event_data_t), 0 },
-  { .events = the_real_slim_shady_bass, .event_count = sizeof(the_real_slim_shady_bass) / sizeof(event_data_t), 0 },
-  { .events = the_real_slim_shady_piano, .event_count = sizeof(the_real_slim_shady_piano) / sizeof(event_data_t), 0 },
-  { .events = the_real_slim_shady_guitar, .event_count = sizeof(the_real_slim_shady_guitar) / sizeof(event_data_t), 0 },
-  { .events = the_real_slim_shady_strings, .event_count = sizeof(the_real_slim_shady_strings) / sizeof(event_data_t), 0 },
-  { .events = the_real_slim_shady_revcymbal, .event_count = sizeof(the_real_slim_shady_revcymbal) / sizeof(event_data_t), 0 },
-  { .events = the_real_slim_shady_flute, .event_count = sizeof(the_real_slim_shady_flute) / sizeof(event_data_t), 0 },
+  { 6, the_real_slim_shady_harpchord, sizeof(the_real_slim_shady_harpchord) / sizeof(event_data_t), 0 },
+  { 39, the_real_slim_shady_bass, sizeof(the_real_slim_shady_bass) / sizeof(event_data_t), 0 },
+  { 0, the_real_slim_shady_piano, sizeof(the_real_slim_shady_piano) / sizeof(event_data_t), 0 },
+  { 25, the_real_slim_shady_guitar, sizeof(the_real_slim_shady_guitar) / sizeof(event_data_t), 0 },
+  { 48, the_real_slim_shady_strings, sizeof(the_real_slim_shady_strings) / sizeof(event_data_t), 0 },
+  { 119, the_real_slim_shady_revcymbal, sizeof(the_real_slim_shady_revcymbal) / sizeof(event_data_t), 0 },
+  { 73, the_real_slim_shady_flute, sizeof(the_real_slim_shady_flute) / sizeof(event_data_t), 0 },
 };

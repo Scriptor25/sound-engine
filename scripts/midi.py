@@ -9,8 +9,6 @@ def midi_note_to_freq(note):
 def process_instrument(instrument):
     events = []
     
-    track_name = instrument.name if instrument.name else None
-
     for note in instrument.notes:
         freq = midi_note_to_freq(note.pitch)
 
@@ -21,21 +19,21 @@ def process_instrument(instrument):
         if freq > 0 and duration > 0:
             events.append((freq, time, duration, velocity))
 
-    return track_name, events
+    return instrument.name, instrument.program, events
 
 def generate_c(tracks, name):
     print("#pragma once\n")
     print("#include <engine.h>\n")
 
-    for track_name, events in tracks:
+    for track_name, program, events in tracks:
         print(f"const event_data_t {name}_{track_name}[] = {{")
         for freq, time, duration, velocity in events:
             print(f"  {{{int(freq)}, {int(time)}, {int(duration)}, {int(velocity)}}},")
         print("};\n")
 
     print(f"const track_data_t {name}_data[] = {{")
-    for track_name, events in tracks:
-        print(f"  {{ .events = {name}_{track_name}, .event_count = sizeof({name}_{track_name}) / sizeof(event_data_t), 0 }},")
+    for track_name, program, events in tracks:
+        print(f"  {{ {int(program)}, {name}_{track_name}, sizeof({name}_{track_name}) / sizeof(event_data_t), 0 }},")
     print("};")
 
 def sanitize_name(name, fallback):
@@ -54,14 +52,14 @@ def sanitize_name(name, fallback):
 def main(filename, name):
     mid = pretty_midi.PrettyMIDI(filename)
     
-    tracks_data = []
+    tracks = []
     used_names = set()
 
     for i, instrument in enumerate(mid.instruments):
         if instrument.is_drum:
             continue
 
-        raw_name, events = process_instrument(instrument)
+        raw_name, program, events = process_instrument(instrument)
 
         if not events:
             continue
@@ -77,9 +75,9 @@ def main(filename, name):
             counter += 1
 
         used_names.add(track_name)
-        tracks_data.append((track_name, events))
+        tracks.append((track_name, program, events))
 
-    generate_c(tracks_data, name)
+    generate_c(tracks, name)
 
 if __name__ == "__main__":
     if len(sys.argv) < 3:
