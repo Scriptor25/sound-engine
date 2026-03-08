@@ -10,7 +10,7 @@ static int find_suitable_resolution(uint32_t frequency,
        --resolution) {
 
     divider = clock_frequency / (frequency * (1 << resolution));
-    if (divider >= 1 && divider < 1024) {
+    if (divider >= ENGINE_DIVIDER_MIN && divider < ENGINE_DIVIDER_MAX) {
 
       if (result) {
         *result = resolution;
@@ -21,10 +21,6 @@ static int find_suitable_resolution(uint32_t frequency,
   }
 
   return 0;
-}
-
-static const envelope_data_t *get_envelope(engine_t *engine, uint32_t program) {
-  return find_envelope(engine->envelopes, engine->envelope_count, program);
 }
 
 static void clear_voice(voice_t *voice) {
@@ -253,7 +249,8 @@ void engine_init(
 
     track->current_event = 0;
 
-    track->envelope = get_envelope(engine, track->data->program);
+    track->envelope = find_envelope(engine->envelopes, engine->envelope_count,
+                                    track->data->program);
 
     track->voice = NULL;
     track->cache = NULL;

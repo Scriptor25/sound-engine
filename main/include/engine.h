@@ -5,6 +5,8 @@
 #include <driver/ledc.h>
 
 #define ENGINE_VOICE_MAX MIN((int)LEDC_TIMER_MAX, (int)LEDC_CHANNEL_MAX)
+#define ENGINE_DIVIDER_MIN 1
+#define ENGINE_DIVIDER_MAX 1024
 #define ENGINE_RESOLUTION_POWER 1
 
 typedef struct __track track_t;
