@@ -18,18 +18,18 @@ typedef struct __envelope_data envelope_data_t;
 
 struct __event_data {
   uint32_t frequency;
+  uint32_t velocity;
   uint32_t time;
   uint32_t duration;
-  uint32_t velocity;
 };
 
 struct __track_data {
   uint32_t program;
+  uint32_t velocity;
+  int32_t transpose;
 
   const event_data_t *events;
   size_t event_count;
-
-  int transpose;
 };
 
 struct __envelope_data {

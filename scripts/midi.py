@@ -31,15 +31,16 @@ def split_voices(notes, overlap = 0):
     return voices
 
 def process_instrument(instrument):
-    voices = split_voices(instrument.notes)
+    name = instrument.name if instrument.name else pretty_midi.utilities.program_to_instrument_name(instrument.program)
 
+    voices = split_voices(instrument.notes)
     processed = []
 
     for index, notes in enumerate(voices):
         events = []
         
         for note in notes:
-            freq = midi_note_to_freq(note.pitch)
+            freq = pretty_midi.utilities.note_number_to_hz(note.pitch)
 
             time = note.start * 1000.0
             duration = (note.end - note.start) * 1000.0
@@ -51,7 +52,7 @@ def process_instrument(instrument):
         if events:
             processed.append((index, events))
 
-    return instrument.name, instrument.program, processed
+    return name, instrument.program, processed
 
 def generate_c(tracks, name):
     print("#pragma once\n")
@@ -60,12 +61,12 @@ def generate_c(tracks, name):
     for track_name, program, events in tracks:
         print(f"const event_data_t {name}_{track_name}[] = {{")
         for freq, time, duration, velocity in events:
-            print(f"  {{{int(freq * 1000)}, {int(time)}, {int(duration)}, {int(velocity)}}},{" // long note" if duration >= 4000 else ""}")
+            print(f"  {{{int(freq * 1000)}, {int(velocity)}, {int(time)}, {int(duration)}}},{" // long note" if duration >= 4000 else ""}")
         print("};\n")
 
     print(f"const track_data_t {name}_data[] = {{")
     for track_name, program, events in tracks:
-        print(f"  {{ {int(program)}, {name}_{track_name}, sizeof({name}_{track_name}) / sizeof(event_data_t), 0 }},")
+        print(f"  {{ {int(program)}, 1000, 0, {name}_{track_name}, sizeof({name}_{track_name}) / sizeof(event_data_t) }},")
     print("};")
 
 def sanitize_name(name, fallback):

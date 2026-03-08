@@ -152,18 +152,20 @@ static void free_and_clear_voice(track_t *track, uint32_t now) {
 
 static void allocate_and_set_voice(engine_t *engine, track_t *track,
                                    uint32_t now, const event_data_t *event) {
-  uint32_t frequency, velocity;
+  uint32_t frequency, velocity, priority_velocity;
 
   frequency = transpose_frequency(event->frequency, track->data->transpose);
   velocity = calculate_velocity(track->envelope, now, event->velocity,
                                 event->time, event->duration);
+
+  priority_velocity = (event->velocity * track->data->velocity) / 1000;
 
   if (!track->voice) {
 
     if (track->cache && !track->cache->current_owner) {
       track->voice = track->cache;
     } else {
-      track->voice = allocate_voice(engine, now, frequency, event->velocity);
+      track->voice = allocate_voice(engine, now, frequency, priority_velocity);
 
       if (!track->voice) {
         return;
@@ -178,7 +180,7 @@ static void allocate_and_set_voice(engine_t *engine, track_t *track,
   track->cache = track->voice;
 
   track->voice->current_owner = track;
-  track->voice->current_velocity = event->velocity;
+  track->voice->current_velocity = priority_velocity;
 
   set_voice(engine, track->voice, frequency / 1000, velocity);
 }
