@@ -1,6 +1,7 @@
 idf_component_register(
     SRCS
         "src/main.c"
+        "src/common.c"
         "src/engine.c"
 
     INCLUDE_DIRS

@@ -1,30 +1,4 @@
-#include <engine.h>
-
-#include <stddef.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-#include <driver/ledc.h>
-
-#include <freertos/FreeRTOS.h>
-#include <freertos/task.h>
-
-static uint32_t get_now() { return xTaskGetTickCount() * portTICK_PERIOD_MS; }
-
-static uint32_t transpose_frequency(uint32_t frequency, int transpose) {
-
-  if (transpose < 0) {
-    return frequency >> -transpose;
-  }
-
-  if (transpose > 0) {
-    return frequency << transpose;
-  }
-
-  return frequency;
-}
+#include "engine.h"
 
 static int find_suitable_resolution(uint32_t frequency,
                                     uint32_t clock_frequency,
@@ -50,45 +24,7 @@ static int find_suitable_resolution(uint32_t frequency,
 }
 
 static const envelope_data_t *get_envelope(engine_t *engine, uint32_t program) {
-  size_t i;
-
-  for (i = 0; i < engine->envelope_count; ++i) {
-    const envelope_data_t *envelope = engine->envelopes + i;
-
-    if (envelope->program_from <= program && program < envelope->program_to) {
-      return envelope;
-    }
-  }
-
-  return NULL;
-}
-
-static uint32_t calculate_velocity(const envelope_data_t *envelope,
-                                   uint32_t now, uint32_t velocity,
-                                   uint32_t begin, uint32_t duration) {
-  uint32_t age, mod, d, delta, r;
-
-  age = now - begin;
-  mod = 1000;
-
-  if (age < envelope->attack) {
-    mod = (age * 1000) / envelope->attack;
-  } else if (age < envelope->attack + envelope->decay) {
-    d = age - envelope->attack;
-    delta = 1000 - envelope->sustain;
-
-    mod = 1000 - (d * delta) / envelope->decay;
-  } else if (age < duration - envelope->release) {
-    mod = envelope->sustain;
-  } else if (age < duration) {
-    r = age - (duration - envelope->release);
-
-    mod = (envelope->sustain * (envelope->release - r)) / envelope->release;
-  } else {
-    mod = 0;
-  }
-
-  return (velocity * mod) / 1000;
+  return find_envelope(engine->envelopes, engine->envelope_count, program);
 }
 
 static void clear_voice(voice_t *voice) {
@@ -107,7 +43,8 @@ static void set_voice(engine_t *engine, voice_t *voice, uint32_t frequency,
   }
 
   if (voice->current_frequency == frequency) {
-    max_duty = ((1 << voice->current_resolution) - 1) >> 4;
+    max_duty =
+        ((1 << voice->current_resolution) - 1) >> ENGINE_RESOLUTION_POWER;
   } else if (find_suitable_resolution(frequency, 80000000, &resolution)) {
 
     if (voice->current_resolution == resolution) {
@@ -123,7 +60,7 @@ static void set_voice(engine_t *engine, voice_t *voice, uint32_t frequency,
       ledc_timer_config(&timer);
     }
 
-    max_duty = ((1 << resolution) - 1) >> 4;
+    max_duty = ((1 << resolution) - 1) >> ENGINE_RESOLUTION_POWER;
 
     voice->current_frequency = frequency;
     voice->current_resolution = resolution;
@@ -190,16 +127,14 @@ static voice_t *allocate_voice(engine_t *engine, uint32_t now,
     return voice;
   }
 
-  if (true) {
-    voice = find_voice(engine, now, frequency, velocity, 1, 0);
-    if (voice) {
-      return voice;
-    }
+  voice = find_voice(engine, now, frequency, velocity, 1, 0);
+  if (voice) {
+    return voice;
+  }
 
-    voice = find_voice(engine, now, frequency, velocity, 1, 1);
-    if (voice) {
-      return voice;
-    }
+  voice = find_voice(engine, now, frequency, velocity, 1, 1);
+  if (voice) {
+    return voice;
   }
 
   return NULL;

@@ -1,5 +1,5 @@
-#include <engine.h>
-#include <songs/hotel_california.h>
+#include "engine.h"
+#include "songs/tetris.h"
 
 #include <stdio.h>
 
@@ -169,7 +169,7 @@ void app_main(void) {
 
       ENVELOPES, sizeof(ENVELOPES) / sizeof(envelope_data_t),
 
-      hotel_california_data, sizeof(hotel_california_data) / sizeof(track_data_t),
+      tetris_data, sizeof(tetris_data) / sizeof(track_data_t),
 
       PINS, sizeof(PINS) / sizeof(int)
 
