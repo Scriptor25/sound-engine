@@ -5,6 +5,5 @@ idf_component_register(
         "src/engine.c"
 
     INCLUDE_DIRS
-        "."
         "include"
 )
