@@ -1,5 +1,5 @@
 #include "engine.h"
-#include "songs/golden.h"
+#include "songs/still_alive.h"
 
 #include <stdio.h>
 
@@ -169,7 +169,8 @@ void app_main(void) {
 
       ENVELOPES, sizeof(ENVELOPES) / sizeof(envelope_data_t),
 
-      golden_data, sizeof(golden_data) / sizeof(track_data_t),
+      still_alive_data,
+      sizeof(still_alive_data) / sizeof(track_data_t),
 
       PINS, sizeof(PINS) / sizeof(int)
 

@@ -286,7 +286,6 @@ void engine_init(
         .gpio_num = pins[i],
         .speed_mode = LEDC_LOW_SPEED_MODE,
         .channel = voice->channel,
-        .intr_type = LEDC_INTR_DISABLE,
         .timer_sel = voice->timer,
         .duty = 0,
         .hpoint = 0,
